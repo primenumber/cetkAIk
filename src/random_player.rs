@@ -27,7 +27,7 @@ impl CetkaikEngine for RandomPlayer {
         pure_move_1.or(pure_move_2).cloned()
     }
 
-    fn search_excited(&mut self, s: &ExcitedState) -> Option<AfterHalfAcceptance> {
+    fn search_excited(&mut self, m: &InfAfterStep, s: &ExcitedState) -> Option<AfterHalfAcceptance> {
         let candidates = s.get_candidates(self.config);
         candidates.choose(&mut self.rng).copied()
     }

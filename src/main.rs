@@ -41,7 +41,7 @@ fn do_match(config: Config, ia_player: &mut dyn CetkaikEngine, a_player: &mut dy
             },
             PureMove::InfAfterStep(m) => {
                 let ext_state = apply_inf_after_step(&state, m, config).unwrap().choose().0;
-                let aha_move = searcher.search_excited(&ext_state).unwrap();
+                let aha_move = searcher.search_excited(&m, &ext_state).unwrap();
                 if !quiet {
                     println!("Move(excited): {:?}", aha_move);
                 }

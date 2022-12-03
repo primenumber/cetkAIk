@@ -45,8 +45,11 @@ impl CetkaikEngine for GreedyPlayer {
                 },
                 PureMove::InfAfterStep(m) => {
                     let ext_state = apply_inf_after_step(&s, *m, self.config).unwrap().choose().0;
-                    let aha_move = self.search_excited(&ext_state).unwrap();
-                    apply_after_half_acceptance(&ext_state, aha_move, self.config).unwrap().choose().0
+                    if let Some(aha_move) = self.search_excited(m, &ext_state) {
+                        apply_after_half_acceptance(&ext_state, aha_move, self.config).unwrap().choose().0
+                    } else {
+                        continue;
+                    }
                 }
             };
             let score = self.eval(&hnr_state);
@@ -58,7 +61,7 @@ impl CetkaikEngine for GreedyPlayer {
         best_move.cloned()
     }
 
-    fn search_excited(&mut self, s: &ExcitedState) -> Option<AfterHalfAcceptance> {
+    fn search_excited(&mut self, m: &InfAfterStep, s: &ExcitedState) -> Option<AfterHalfAcceptance> {
         let candidates = s.get_candidates(self.config);
         let mut best_move = None;
         let mut best_score = -50.0;

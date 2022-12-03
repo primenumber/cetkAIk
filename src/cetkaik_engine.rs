@@ -16,7 +16,7 @@ pub enum TymokOrTaxot {
 
 pub trait CetkaikEngine {
     fn search(&mut self, s: &GroundState) -> Option<PureMove>;
-    fn search_excited(&mut self, s: &ExcitedState) -> Option<AfterHalfAcceptance>;
+    fn search_excited(&mut self, m: &InfAfterStep, s: &ExcitedState) -> Option<AfterHalfAcceptance>;
     fn search_hand_resolved(&mut self, s: &HandExists) -> Option<TymokOrTaxot>;
 }
 
