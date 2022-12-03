@@ -97,8 +97,7 @@ fn do_match(config: Config, ia_player: &mut dyn CetkaikEngine, a_player: &mut dy
 
 fn main() {
     let config = Config::cerke_online_alpha();
-    do_match(config, &mut RandomPlayer::new(config), &mut RandomPlayer::new(config), true);
-    do_match(config, &mut RandomPlayer::new(config), &mut GreedyPlayer::new(config), true);
-    do_match(config, &mut GreedyPlayer::new(config), &mut RandomPlayer::new(config), true);
-    do_match(config, &mut GreedyPlayer::new(config), &mut GreedyPlayer::new(config), true);
+    loop {
+        do_match(config, &mut GreedyPlayer::new(config), &mut GreedyPlayer::new(config), false);
+    }
 }
