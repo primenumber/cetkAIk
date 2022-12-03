@@ -60,7 +60,17 @@ impl CetkaikEngine for GreedyPlayer {
 
     fn search_excited(&mut self, s: &ExcitedState) -> Option<AfterHalfAcceptance> {
         let candidates = s.get_candidates(self.config);
-        candidates.choose(&mut self.rng).copied()
+        let mut best_move = None;
+        let mut best_score = -50.0;
+        for aha_move in candidates.iter() {
+            let hnr_state = apply_after_half_acceptance(&s, *aha_move, self.config).unwrap().choose().0;
+            let score = self.eval(&hnr_state);
+            if score > best_score {
+                best_move = Some(aha_move);
+                best_score = score;
+            }
+        }
+        best_move.copied()
     }
 
     fn search_hand_resolved(&mut self, s: &HandExists) -> Option<TymokOrTaxot> {
