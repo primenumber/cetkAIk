@@ -22,7 +22,6 @@ impl GreedyPlayer {
 impl CetkaikEngine for GreedyPlayer {
     fn search(&mut self, s: &GroundState) -> Option<PureMove> {
         let (hop1zuo1_candidates, mut candidates) = s.get_candidates(self.config);
-        eprintln!("{} {}", hop1zuo1_candidates.len(), candidates.len());
         let mut best_move = None;
         let mut best_score = -50;
         candidates.shuffle(&mut self.rng);

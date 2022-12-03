@@ -9,11 +9,13 @@ use greedy::*;
 use random_player::*;
 use cetkaik_engine::*;
 
-fn do_match(config: Config, ia_player: &mut dyn CetkaikEngine, a_player: &mut dyn CetkaikEngine) {
+fn do_match(config: Config, ia_player: &mut dyn CetkaikEngine, a_player: &mut dyn CetkaikEngine, quiet: bool) {
     let mut state = initial_state().choose().0;
     let mut turn_count = 0;
     loop {
-        println!("Turn: {}, Season: {:?}, Scores: (IA:{}, A:{})", turn_count, state.season, state.scores.ia(), state.scores.a());
+        if !quiet {
+            println!("Turn: {}, Season: {:?}, Scores: (IA:{}, A:{})", turn_count, state.season, state.scores.ia(), state.scores.a());
+        }
         let searcher: &mut dyn CetkaikEngine = match state.whose_turn {
             Side::IASide => ia_player,
             Side::ASide => a_player,
@@ -23,7 +25,9 @@ fn do_match(config: Config, ia_player: &mut dyn CetkaikEngine, a_player: &mut dy
             break;
         }
         let pure_move = pure_move.unwrap();
-        println!("Move: {:?}", pure_move);
+        if !quiet {
+            println!("Move: {:?}", pure_move);
+        }
         let hnr_state = match pure_move {
             PureMove::NormalMove(m) => {
                  apply_normal_move(&state, m, config).unwrap().choose().0
@@ -31,7 +35,9 @@ fn do_match(config: Config, ia_player: &mut dyn CetkaikEngine, a_player: &mut dy
             PureMove::InfAfterStep(m) => {
                 let ext_state = apply_inf_after_step(&state, m, config).unwrap().choose().0;
                 let aha_move = searcher.search_excited(&ext_state).unwrap();
-                println!("Move(excited): {:?}", aha_move);
+                if !quiet {
+                    println!("Move(excited): {:?}", aha_move);
+                }
                 apply_after_half_acceptance(&ext_state, aha_move, config).unwrap().choose().0
             }
         };
@@ -46,7 +52,9 @@ fn do_match(config: Config, ia_player: &mut dyn CetkaikEngine, a_player: &mut dy
                 match searcher.search_hand_resolved(&he).unwrap() {
                     TymokOrTaxot::Tymok(s) => state = s,
                     TymokOrTaxot::Taxot(t) => {
-                        println!("Taxot!");
+                        if !quiet {
+                            println!("Taxot!");
+                        }
                         match t {
                             IfTaxot::NextSeason(ps) => state = ps.clone().choose().0,
                             IfTaxot::VictoriousSide(v) => {
@@ -68,7 +76,8 @@ fn do_match(config: Config, ia_player: &mut dyn CetkaikEngine, a_player: &mut dy
 
 fn main() {
     let config = Config::cerke_online_alpha();
-    let mut ia_searcher = RandomPlayer::new(config);
-    let mut a_searcher = GreedyPlayer::new(config);
-    do_match(config, &mut ia_searcher, &mut a_searcher);
+    do_match(config, &mut RandomPlayer::new(config), &mut RandomPlayer::new(config), true);
+    do_match(config, &mut RandomPlayer::new(config), &mut GreedyPlayer::new(config), true);
+    do_match(config, &mut GreedyPlayer::new(config), &mut RandomPlayer::new(config), true);
+    do_match(config, &mut GreedyPlayer::new(config), &mut GreedyPlayer::new(config), true);
 }
