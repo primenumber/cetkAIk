@@ -1,0 +1,93 @@
+use cetkaik_full_state_transition::state::*;
+use cetkaik_full_state_transition::message::*;
+use cetkaik_full_state_transition::*;
+use cetkaik_full_state_transition::probabilistic::Probabilistic;
+use cetkaik_core::absolute;
+use rand::prelude::*;
+use rand::rngs::SmallRng;
+
+trait CetkaikEngine {
+    fn search(&mut self, s: &GroundState) -> Option<PureMove>;
+    fn search_excited(&mut self, s: &ExcitedState) -> Option<AfterHalfAcceptance>;
+    fn search_hand_resolved(&mut self, s: &HandResolved) -> Option<bool>;
+}
+
+struct RandomPlayer {
+    config: Config,
+    rng: SmallRng,
+}
+
+impl RandomPlayer {
+    fn new(config: Config) -> RandomPlayer {
+        RandomPlayer {
+            config,
+            rng: SmallRng::from_entropy(),
+        }
+    }
+}
+
+impl CetkaikEngine for RandomPlayer {
+    fn search(&mut self, s: &GroundState) -> Option<PureMove> {
+        let (hop1zuo1_candidates, candidates) = s.get_candidates(self.config);
+        let pure_move_1 = hop1zuo1_candidates.choose(&mut self.rng);
+        let pure_move_2 = candidates.choose(&mut self.rng);
+        pure_move_1.or(pure_move_2).cloned()
+    }
+
+    fn search_excited(&mut self, s: &ExcitedState) -> Option<AfterHalfAcceptance> {
+        let candidates = s.get_candidates(self.config);
+        candidates.choose(&mut self.rng).copied()
+    }
+
+    fn search_hand_resolved(&mut self, _s: &HandResolved) -> Option<bool> {
+        [false, true].choose(&mut self.rng).copied()
+    }
+}
+
+fn main() {
+    let config = Config::cerke_online_alpha();
+    let pstate = initial_state();
+    //eprintln!("{:?}", pstate);
+    let (mut state, _) = pstate.choose();
+    let mut searcher = RandomPlayer::new(config);
+    loop {
+        println!("{:?} {} {}", state.season, state.scores.ia(), state.scores.a());
+        let pure_move = searcher.search(&state);
+        if pure_move.is_none() {
+            break;
+        }
+        let pure_move = pure_move.unwrap();
+        println!("{:?}", pure_move);
+        let hnr_state = match pure_move {
+            PureMove::NormalMove(m) => {
+                 apply_normal_move(&state, m, config).unwrap().choose().0
+            },
+            PureMove::InfAfterStep(m) => {
+                let ext_state = apply_inf_after_step(&state, m, config).unwrap().choose().0;
+                let aha_move = searcher.search_excited(&ext_state).unwrap();
+                apply_after_half_acceptance(&ext_state, aha_move, config).unwrap().choose().0
+            }
+        };
+        let resolved = resolve(&hnr_state, config);
+        match &resolved {
+            HandResolved::NeitherTymokNorTaxot(s) => state = s.clone(),
+            HandResolved::HandExists{if_tymok, if_taxot} => {
+                if searcher.search_hand_resolved(&resolved).unwrap() {
+                    state = if_tymok.clone();
+                } else {
+                    match if_taxot {
+                        IfTaxot::NextSeason(ps) => state = ps.clone().choose().0,
+                        IfTaxot::VictoriousSide(v) => {
+                            println!("Won: {:?}", v);
+                            break;
+                        },
+                    }
+                }
+            },
+            HandResolved::GameEndsWithoutTymokTaxot(v) => {
+                println!("Won: {:?}", v);
+                break;
+            },
+        }
+    }
+}
