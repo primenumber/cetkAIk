@@ -5,6 +5,8 @@ use cetkaik_full_state_transition::state::*;
 use cetkaik_full_state_transition::message::*;
 use cetkaik_full_state_transition::*;
 use cetkaik_core::absolute::Side;
+use cetkaik_core::absolute::Piece;
+use cetkaik_core::absolute::NonTam2Piece;
 use greedy::*;
 use random_player::*;
 use cetkaik_engine::*;
@@ -14,13 +16,25 @@ fn do_match(config: Config, ia_player: &mut dyn CetkaikEngine, a_player: &mut dy
     let mut turn_count = 0;
     loop {
         if !quiet {
+            fn to_s(v: &[NonTam2Piece]) -> String {
+                let mut s = String::new();
+                for (idx, &e) in v.iter().enumerate() {
+                    if idx > 0 {
+                        s += " ";
+                    }
+                    s += &format!("{}", e);
+                }
+                s
+            }
             println!(
-                "{}, Turn: {:?}, Season: {:?}, Scores: (IA:{}, A:{})",
+                "{}, Turn: {:?}, Season: {:?}, Scores: (IA:{}, A:{}), hop1zuo1: (IA: {}, A: {})",
                 turn_count,
                 state.whose_turn,
                 state.season,
                 state.scores.ia(),
-                state.scores.a()
+                state.scores.a(),
+                to_s(&state.f.ia_side_hop1zuo1),
+                to_s(&state.f.a_side_hop1zuo1),
             );
         }
         let searcher: &mut dyn CetkaikEngine = match state.whose_turn {
