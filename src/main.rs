@@ -1,8 +1,6 @@
 use cetkaik_full_state_transition::state::*;
 use cetkaik_full_state_transition::message::*;
 use cetkaik_full_state_transition::*;
-use cetkaik_full_state_transition::probabilistic::Probabilistic;
-use cetkaik_core::absolute;
 use rand::prelude::*;
 use rand::rngs::SmallRng;
 
@@ -76,6 +74,7 @@ fn main() {
             PureMove::InfAfterStep(m) => {
                 let ext_state = apply_inf_after_step(&state, m, config).unwrap().choose().0;
                 let aha_move = searcher.search_excited(&ext_state).unwrap();
+                println!("{:?}", aha_move);
                 apply_after_half_acceptance(&ext_state, aha_move, config).unwrap().choose().0
             }
         };
