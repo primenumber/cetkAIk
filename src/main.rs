@@ -5,10 +5,9 @@ use cetkaik_full_state_transition::state::*;
 use cetkaik_full_state_transition::message::*;
 use cetkaik_full_state_transition::*;
 use cetkaik_core::absolute::Side;
-use cetkaik_core::absolute::Piece;
 use cetkaik_core::absolute::NonTam2Piece;
 use greedy::*;
-use random_player::*;
+//use random_player::*;
 use cetkaik_engine::*;
 
 fn do_match(config: Config, ia_player: &mut dyn CetkaikEngine, a_player: &mut dyn CetkaikEngine, quiet: bool) {
