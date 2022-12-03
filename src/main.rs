@@ -14,7 +14,14 @@ fn do_match(config: Config, ia_player: &mut dyn CetkaikEngine, a_player: &mut dy
     let mut turn_count = 0;
     loop {
         if !quiet {
-            println!("Turn: {}, Season: {:?}, Scores: (IA:{}, A:{})", turn_count, state.season, state.scores.ia(), state.scores.a());
+            println!(
+                "{}, Turn: {:?}, Season: {:?}, Scores: (IA:{}, A:{})",
+                turn_count,
+                state.whose_turn,
+                state.season,
+                state.scores.ia(),
+                state.scores.a()
+            );
         }
         let searcher: &mut dyn CetkaikEngine = match state.whose_turn {
             Side::IASide => ia_player,
