@@ -1,6 +1,8 @@
 use cetkaik_full_state_transition::state::*;
 use cetkaik_full_state_transition::message::*;
 use cetkaik_full_state_transition::*;
+use cetkaik_calculate_hand::*;
+use cetkaik_core::absolute::Side;
 use crate::cetkaik_engine::*;
 use rand::prelude::*;
 use rand::rngs::SmallRng;
@@ -17,13 +19,23 @@ impl GreedyPlayer {
             rng: SmallRng::from_entropy(),
         }
     }
+
+    fn eval(&self, hnr_state: &HandNotResolved) -> f32 {
+        let mut result = score_hnr(&hnr_state) as f32;
+        let (player_hop1zuo1, opponent_hop1zuo1) = match hnr_state.whose_turn {
+            Side::IASide => (&hnr_state.f.ia_side_hop1zuo1, &hnr_state.f.a_side_hop1zuo1),
+            Side::ASide => (&hnr_state.f.a_side_hop1zuo1, &hnr_state.f.ia_side_hop1zuo1),
+        };
+        result += calculate_hands_and_score_from_pieces(&player_hop1zuo1).unwrap().score as f32;
+        result
+    }
 }
 
 impl CetkaikEngine for GreedyPlayer {
     fn search(&mut self, s: &GroundState) -> Option<PureMove> {
         let (hop1zuo1_candidates, mut candidates) = s.get_candidates(self.config);
         let mut best_move = None;
-        let mut best_score = -50;
+        let mut best_score = -50.0;
         candidates.shuffle(&mut self.rng);
         candidates.extend(hop1zuo1_candidates);
         for pure_move in candidates.iter() {
@@ -37,7 +49,7 @@ impl CetkaikEngine for GreedyPlayer {
                     apply_after_half_acceptance(&ext_state, aha_move, self.config).unwrap().choose().0
                 }
             };
-            let score = score_hnr(&hnr_state);
+            let score = self.eval(&hnr_state);
             if score > best_score {
                 best_move = Some(pure_move);
                 best_score = score;
