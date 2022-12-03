@@ -1,9 +1,11 @@
 mod cetkaik_engine;
 mod random_player;
+mod greedy;
 use cetkaik_full_state_transition::state::*;
 use cetkaik_full_state_transition::message::*;
 use cetkaik_full_state_transition::*;
 use cetkaik_core::absolute::Side;
+use greedy::*;
 use random_player::*;
 use cetkaik_engine::*;
 
@@ -12,11 +14,12 @@ fn main() {
     let pstate = initial_state();
     //eprintln!("{:?}", pstate);
     let (mut state, _) = pstate.choose();
-    let mut ia_searcher = RandomPlayer::new(config);
-    let mut a_searcher = RandomPlayer::new(config);
+    let mut ia_searcher = GreedyPlayer::new(config);
+    let mut a_searcher = GreedyPlayer::new(config);
+    let mut turn_count = 0;
     loop {
-        println!("{:?} {} {}", state.season, state.scores.ia(), state.scores.a());
-        let searcher = match state.whose_turn {
+        println!("{} {:?} {} {}", turn_count, state.season, state.scores.ia(), state.scores.a());
+        let searcher: &mut dyn CetkaikEngine = match state.whose_turn {
             Side::IASide => &mut ia_searcher,
             Side::ASide => &mut a_searcher,
         };
@@ -64,5 +67,6 @@ fn main() {
                 break;
             },
         }
+        turn_count += 1;
     }
 }
