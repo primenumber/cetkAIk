@@ -6,10 +6,21 @@ use cetkaik_core::absolute;
 use rand::prelude::*;
 use rand::rngs::SmallRng;
 
+struct HandExists {
+    if_tymok: GroundState,
+    if_taxot: IfTaxot,
+}
+
+#[derive(Clone)]
+enum TymokOrTaxot {
+    Tymok(GroundState),
+    Taxot(IfTaxot),
+}
+
 trait CetkaikEngine {
     fn search(&mut self, s: &GroundState) -> Option<PureMove>;
     fn search_excited(&mut self, s: &ExcitedState) -> Option<AfterHalfAcceptance>;
-    fn search_hand_resolved(&mut self, s: &HandResolved) -> Option<bool>;
+    fn search_hand_resolved(&mut self, s: &HandExists) -> Option<TymokOrTaxot>;
 }
 
 struct RandomPlayer {
@@ -39,8 +50,8 @@ impl CetkaikEngine for RandomPlayer {
         candidates.choose(&mut self.rng).copied()
     }
 
-    fn search_hand_resolved(&mut self, _s: &HandResolved) -> Option<bool> {
-        [false, true].choose(&mut self.rng).copied()
+    fn search_hand_resolved(&mut self, s: &HandExists) -> Option<TymokOrTaxot> {
+        [TymokOrTaxot::Tymok(s.if_tymok.clone()), TymokOrTaxot::Taxot(s.if_taxot.clone())].choose(&mut self.rng).cloned()
     }
 }
 
@@ -72,15 +83,21 @@ fn main() {
         match &resolved {
             HandResolved::NeitherTymokNorTaxot(s) => state = s.clone(),
             HandResolved::HandExists{if_tymok, if_taxot} => {
-                if searcher.search_hand_resolved(&resolved).unwrap() {
-                    state = if_tymok.clone();
-                } else {
-                    match if_taxot {
-                        IfTaxot::NextSeason(ps) => state = ps.clone().choose().0,
-                        IfTaxot::VictoriousSide(v) => {
-                            println!("Won: {:?}", v);
-                            break;
-                        },
+                let he = HandExists {
+                    if_tymok: if_tymok.clone(),
+                    if_taxot: if_taxot.clone(),
+                };
+                match searcher.search_hand_resolved(&he).unwrap() {
+                    TymokOrTaxot::Tymok(s) => state = s,
+                    TymokOrTaxot::Taxot(t) => {
+                        println!("Taxot!");
+                        match t {
+                            IfTaxot::NextSeason(ps) => state = ps.clone().choose().0,
+                            IfTaxot::VictoriousSide(v) => {
+                                println!("Won: {:?}", v);
+                                break;
+                            },
+                        }
                     }
                 }
             },
