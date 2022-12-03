@@ -3,6 +3,7 @@ use cetkaik_full_state_transition::message::*;
 use cetkaik_full_state_transition::*;
 use cetkaik_calculate_hand::*;
 use cetkaik_core::absolute::Side;
+use cetkaik_core::absolute::Piece;
 use crate::cetkaik_engine::*;
 use rand::prelude::*;
 use rand::rngs::SmallRng;
@@ -41,11 +42,31 @@ impl CetkaikEngine for GreedyPlayer {
         for pure_move in candidates.iter() {
             let hnr_state = match pure_move {
                 PureMove::NormalMove(m) => {
+                    match m {
+                        NormalMove::TamMoveNoStep{..} => continue,
+                        NormalMove::TamMoveStepsDuringFormer{..} => continue,
+                        NormalMove::TamMoveStepsDuringLatter{..} => continue,
+                        NormalMove::NonTamMoveSrcStepDstFinite{src, step, dest} => if let Some(Piece::Tam2) = s.f.board.get(&step) {
+                            continue;
+                        } else if src == dest {
+                            continue;
+                        }
+                        _ => (),
+                    }
                      apply_normal_move(&s, *m, self.config).unwrap().choose().0
                 },
                 PureMove::InfAfterStep(m) => {
+                    if let Some(Piece::Tam2) = s.f.board.get(&m.src) {
+                        continue;
+                    }
+                    if let Some(Piece::Tam2) = s.f.board.get(&m.step) {
+                        continue;
+                    }
                     let ext_state = apply_inf_after_step(&s, *m, self.config).unwrap().choose().0;
                     if let Some(aha_move) = self.search_excited(m, &ext_state) {
+                        if aha_move.dest.is_none() {
+                            continue;
+                        }
                         apply_after_half_acceptance(&ext_state, aha_move, self.config).unwrap().choose().0
                     } else {
                         continue;
@@ -66,6 +87,9 @@ impl CetkaikEngine for GreedyPlayer {
         let mut best_move = None;
         let mut best_score = -50.0;
         for aha_move in candidates.iter() {
+            if aha_move.dest == Some(m.src) {
+                continue;
+            }
             let hnr_state = apply_after_half_acceptance(&s, *aha_move, self.config).unwrap().choose().0;
             let score = self.eval(&hnr_state);
             if score > best_score {
