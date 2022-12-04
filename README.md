@@ -1,4 +1,4 @@
-ceckAIk
+cetkAIk
 ====
 
 机戦のAI
