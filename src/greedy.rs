@@ -28,6 +28,7 @@ impl GreedyPlayer {
             Side::ASide => (&hnr_state.f.a_side_hop1zuo1, &hnr_state.f.ia_side_hop1zuo1),
         };
         result += 2.0 * calculate_hands_and_score_from_pieces(&player_hop1zuo1).unwrap().score as f32;
+        result += player_hop1zuo1.len() as f32;
         result
     }
 }
