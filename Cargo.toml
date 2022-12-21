@@ -6,7 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-cetkaik_full_state_transition = "0.4.5"
-cetkaik_core = "0.4.0"
-cetkaik_calculate_hand = "0.4.0"
+cetkaik_full_state_transition = "0.8.0"
+cetkaik_yhuap_move_candidates = "0.7.5"
+cetkaik_core = "0.5.5"
+cetkaik_calculate_hand = "0.5.0"
 rand = { version = "0.8", features = ["small_rng"] }

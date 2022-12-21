@@ -1,7 +1,8 @@
-use cetkaik_full_state_transition::state::*;
-use cetkaik_full_state_transition::message::*;
-use cetkaik_full_state_transition::*;
 use crate::cetkaik_engine::*;
+use cetkaik_full_state_transition::message::*;
+use cetkaik_full_state_transition::state::*;
+use cetkaik_full_state_transition::*;
+use cetkaik_yhuap_move_candidates::CetkaikRepresentation;
 use rand::prelude::*;
 use rand::rngs::SmallRng;
 
@@ -19,20 +20,29 @@ impl RandomPlayer {
     }
 }
 
-impl CetkaikEngine for RandomPlayer {
-    fn search(&mut self, s: &GroundState) -> Option<PureMove> {
+impl<T: CetkaikRepresentation + Clone> CetkaikEngine<T> for RandomPlayer {
+    fn search(&mut self, s: &GroundState_<T>) -> Option<PureMove__<T::AbsoluteCoord>> {
         let (hop1zuo1_candidates, candidates) = s.get_candidates(self.config);
         let pure_move_1 = hop1zuo1_candidates.choose(&mut self.rng);
         let pure_move_2 = candidates.choose(&mut self.rng);
         pure_move_1.or(pure_move_2).cloned()
     }
 
-    fn search_excited(&mut self, m: &InfAfterStep, s: &ExcitedState) -> Option<AfterHalfAcceptance> {
+    fn search_excited(
+        &mut self,
+        _m: &InfAfterStep_<T::AbsoluteCoord>,
+        s: &ExcitedState_<T>,
+    ) -> Option<AfterHalfAcceptance_<T::AbsoluteCoord>> {
         let candidates = s.get_candidates(self.config);
         candidates.choose(&mut self.rng).copied()
     }
 
-    fn search_hand_resolved(&mut self, s: &HandExists) -> Option<TymokOrTaxot> {
-        [TymokOrTaxot::Tymok(s.if_tymok.clone()), TymokOrTaxot::Taxot(s.if_taxot.clone())].choose(&mut self.rng).cloned()
+    fn search_hand_resolved(&mut self, s: &HandExists_<T>) -> Option<TymokOrTaxot_<T>> {
+        [
+            TymokOrTaxot_::Tymok(s.if_tymok.clone()),
+            TymokOrTaxot_::Taxot(s.if_taxot.clone()),
+        ]
+        .choose(&mut self.rng)
+        .cloned()
     }
 }
