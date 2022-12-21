@@ -2,7 +2,7 @@ use crate::cetkaik_engine::*;
 use cetkaik_full_state_transition::message::*;
 use cetkaik_full_state_transition::state::*;
 use cetkaik_full_state_transition::*;
-use cetkaik_yhuap_move_candidates::CetkaikRepresentation;
+use cetkaik_interface::CetkaikRepresentation;
 use rand::prelude::*;
 use rand::rngs::SmallRng;
 

@@ -24,8 +24,10 @@ name = "cetk_ai_k"
 version = "0.1.0"
 dependencies = [
  "cetkaik_calculate_hand",
- "cetkaik_core",
+ "cetkaik_compact_representation",
  "cetkaik_full_state_transition",
+ "cetkaik_fundamental",
+ "cetkaik_interface",
  "cetkaik_yhuap_move_candidates",
  "rand",
 ]
@@ -33,10 +35,8 @@ dependencies = [
 [[package]]
 name = "cetkaik_calculate_hand"
 version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa1ccda94fd2d47db7695221be5c884921ce1d97ad14a80e066cd1ae420d066e"
 dependencies = [
- "cetkaik_core",
+ "cetkaik_fundamental",
  "hashbrown",
  "multiset",
  "serde",
@@ -45,31 +45,19 @@ dependencies = [
 
 [[package]]
 name = "cetkaik_compact_representation"
-version = "0.3.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a96305fcce11b6afd1d37a80f2dabed9225d88e8cf0a8892f4d379007fe1c977"
+version = "0.3.5"
 dependencies = [
- "cetkaik_core",
-]
-
-[[package]]
-name = "cetkaik_core"
-version = "0.5.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ee40c7ce73d9fd220bccc97b4057cbaa3b348b7afef0efbf2794986e3d8c0bd7"
-dependencies = [
- "maplit",
- "serde",
+ "cetkaik_fundamental",
+ "cetkaik_interface",
 ]
 
 [[package]]
 name = "cetkaik_full_state_transition"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "258cf48efbc40c0f95f4c14e38059c1409738ad410082af6e5216bde76285196"
 dependencies = [
  "cetkaik_calculate_hand",
- "cetkaik_core",
+ "cetkaik_fundamental",
+ "cetkaik_interface",
  "cetkaik_yhuap_move_candidates",
  "enum_primitive",
  "maplit",
@@ -80,13 +68,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "cetkaik_fundamental"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "cetkaik_interface"
+version = "0.1.0"
+dependencies = [
+ "cetkaik_fundamental",
+]
+
+[[package]]
 name = "cetkaik_yhuap_move_candidates"
 version = "0.7.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7c5a91a913f7c9df3be29a4ebb0a716118264b4f5a8440ac8ba2fced1bbf64d9"
 dependencies = [
- "cetkaik_compact_representation",
- "cetkaik_core",
+ "cetkaik_fundamental",
+ "cetkaik_interface",
  "num",
 ]
 
@@ -296,9 +296,9 @@ dependencies = [
 
 [[package]]
 name = "readonly"
-version = "0.2.2"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c0e08c3b00fcae55ee1dac341e1b9b5bc942e7e1931957436ab00b4a5e8dc18"
+checksum = "d78725e4e53781014168628ef49b2dc2fc6ae8d01a08769a5064685d34ee116c"
 dependencies = [
  "proc-macro2",
  "quote",

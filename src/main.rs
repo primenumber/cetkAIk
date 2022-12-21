@@ -1,14 +1,14 @@
 mod cetkaik_engine;
 mod greedy;
 mod random_player;
-use cetkaik_core::absolute::Side;
-use cetkaik_core::ColorAndProf;
 use cetkaik_full_state_transition::message::*;
 use cetkaik_full_state_transition::state::*;
 use cetkaik_full_state_transition::*;
+use cetkaik_fundamental::AbsoluteSide::{ASide, IASide};
+use cetkaik_fundamental::ColorAndProf;
 
-use cetkaik_yhuap_move_candidates::CetkaikCompact;
-use cetkaik_yhuap_move_candidates::CetkaikRepresentation;
+use cetkaik_compact_representation::CetkaikCompact;
+use cetkaik_interface::CetkaikRepresentation;
 use greedy::*;
 //use random_player::*;
 use cetkaik_engine::*;
@@ -40,21 +40,14 @@ fn do_match<T: CetkaikRepresentation + Clone>(
                 state.season,
                 state.scores.ia(),
                 state.scores.a(),
-                to_s(&T::hop1zuo1_of(
-                    T::from_cetkaikcore_absolute_side(cetkaik_core::absolute::Side::IASide),
-                    &state.f
-                )),
-                to_s(&T::hop1zuo1_of(
-                    T::from_cetkaikcore_absolute_side(cetkaik_core::absolute::Side::ASide),
-                    &state.f
-                )),
+                to_s(&T::hop1zuo1_of(IASide, &state.f)),
+                to_s(&T::hop1zuo1_of(ASide, &state.f)),
             );
         }
-        let searcher: &mut dyn CetkaikEngine<T> =
-            match T::to_cetkaikcore_absolute_side(state.whose_turn) {
-                Side::IASide => ia_player,
-                Side::ASide => a_player,
-            };
+        let searcher: &mut dyn CetkaikEngine<T> = match state.whose_turn {
+            IASide => ia_player,
+            ASide => a_player,
+        };
         let pure_move = searcher.search(&state);
         if pure_move.is_none() {
             break;

@@ -1,10 +1,10 @@
 use crate::cetkaik_engine::*;
 use cetkaik_calculate_hand::*;
-use cetkaik_core::absolute::Side;
 use cetkaik_full_state_transition::message::*;
 use cetkaik_full_state_transition::state::*;
 use cetkaik_full_state_transition::*;
-use cetkaik_yhuap_move_candidates::CetkaikRepresentation;
+use cetkaik_fundamental::AbsoluteSide::{ASide, IASide};
+use cetkaik_interface::CetkaikRepresentation;
 use rand::prelude::*;
 use rand::rngs::SmallRng;
 
@@ -23,29 +23,16 @@ impl GreedyPlayer {
 
     fn eval<T: CetkaikRepresentation>(&self, hnr_state: &HandNotResolved_<T>) -> f32 {
         let mut result = score_hnr(hnr_state) as f32;
-        let (player_hop1zuo1, opponent_hop1zuo1) =
-            match T::to_cetkaikcore_absolute_side(hnr_state.whose_turn) {
-                Side::IASide => (
-                    T::hop1zuo1_of(
-                        T::from_cetkaikcore_absolute_side(cetkaik_core::absolute::Side::IASide),
-                        &hnr_state.f,
-                    ),
-                    T::hop1zuo1_of(
-                        T::from_cetkaikcore_absolute_side(cetkaik_core::absolute::Side::ASide),
-                        &hnr_state.f,
-                    ),
-                ),
-                Side::ASide => (
-                    T::hop1zuo1_of(
-                        T::from_cetkaikcore_absolute_side(cetkaik_core::absolute::Side::ASide),
-                        &hnr_state.f,
-                    ),
-                    T::hop1zuo1_of(
-                        T::from_cetkaikcore_absolute_side(cetkaik_core::absolute::Side::IASide),
-                        &hnr_state.f,
-                    ),
-                ),
-            };
+        let (player_hop1zuo1, opponent_hop1zuo1) = match hnr_state.whose_turn {
+            IASide => (
+                T::hop1zuo1_of(IASide, &hnr_state.f),
+                T::hop1zuo1_of(ASide, &hnr_state.f),
+            ),
+            ASide => (
+                T::hop1zuo1_of(ASide, &hnr_state.f),
+                T::hop1zuo1_of(IASide, &hnr_state.f),
+            ),
+        };
         result += 2.0
             * calculate_hands_and_score_from_pieces(&player_hop1zuo1)
                 .unwrap()
@@ -95,10 +82,7 @@ impl<T: CetkaikRepresentation + Clone> CetkaikEngine<T> for GreedyPlayer {
                     {
                         continue;
                     }
-                    let ext_state = apply_inf_after_step(s, *m, self.config)
-                        .unwrap()
-                        .choose()
-                        .0;
+                    let ext_state = apply_inf_after_step(s, *m, self.config).unwrap().choose().0;
                     if let Some(aha_move) = self.search_excited(m, &ext_state) {
                         if aha_move.dest.is_none() {
                             continue;
