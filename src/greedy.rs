@@ -4,7 +4,7 @@ use cetkaik_full_state_transition::message::*;
 use cetkaik_full_state_transition::state::*;
 use cetkaik_full_state_transition::*;
 use cetkaik_fundamental::AbsoluteSide::{ASide, IASide};
-use cetkaik_interface::CetkaikRepresentation;
+use cetkaik_traits::CetkaikRepresentation;
 use rand::prelude::*;
 use rand::rngs::SmallRng;
 

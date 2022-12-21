@@ -6,10 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-cetkaik_calculate_hand = { path = "../cetkaik_calculate_hand" }
-cetkaik_fundamental = { path = "../cetkaik_fundamental" }
-cetkaik_full_state_transition = { path = "../cetkaik_full_state_transition" }
-cetkaik_interface = { path = "../cetkaik_interface" }
-cetkaik_yhuap_move_candidates = { path = "../cetkaik_yhuap_move_candidates" }
-cetkaik_compact_representation = { path = "../cetkaik_compact_representation" }
+cetkaik_calculate_hand = "1.0.0"
+cetkaik_fundamental = "1.0.0"
+cetkaik_full_state_transition = "1.0.0"
+cetkaik_traits = "1.0.0"
+cetkaik_yhuap_move_candidates = "1.0.0"
+cetkaik_compact_representation = "1.0.0"
 rand = { version = "0.8", features = ["small_rng"] }

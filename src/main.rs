@@ -8,7 +8,7 @@ use cetkaik_fundamental::AbsoluteSide::{ASide, IASide};
 use cetkaik_fundamental::ColorAndProf;
 
 use cetkaik_compact_representation::CetkaikCompact;
-use cetkaik_interface::CetkaikRepresentation;
+use cetkaik_traits::CetkaikRepresentation;
 use greedy::*;
 //use random_player::*;
 use cetkaik_engine::*;

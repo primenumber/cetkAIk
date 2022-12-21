@@ -27,14 +27,16 @@ dependencies = [
  "cetkaik_compact_representation",
  "cetkaik_full_state_transition",
  "cetkaik_fundamental",
- "cetkaik_interface",
+ "cetkaik_traits",
  "cetkaik_yhuap_move_candidates",
  "rand",
 ]
 
 [[package]]
 name = "cetkaik_calculate_hand"
-version = "0.5.0"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a20e882fa08fefaa7c218a02570b94fb85da2e783bb16db10e44f912659c8224"
 dependencies = [
  "cetkaik_fundamental",
  "hashbrown",
@@ -45,19 +47,23 @@ dependencies = [
 
 [[package]]
 name = "cetkaik_compact_representation"
-version = "0.3.5"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "24a56d1181a54009f4eb99fa1e17acc947bea817d6340104c8c85bf9cec1c99a"
 dependencies = [
  "cetkaik_fundamental",
- "cetkaik_interface",
+ "cetkaik_traits",
 ]
 
 [[package]]
 name = "cetkaik_full_state_transition"
-version = "0.8.0"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a9092a91d6e63bc174e597143e259e14d68ee380f07b2fb97d7d54b4b37da968"
 dependencies = [
  "cetkaik_calculate_hand",
  "cetkaik_fundamental",
- "cetkaik_interface",
+ "cetkaik_traits",
  "cetkaik_yhuap_move_candidates",
  "enum_primitive",
  "maplit",
@@ -69,24 +75,30 @@ dependencies = [
 
 [[package]]
 name = "cetkaik_fundamental"
-version = "0.1.0"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "417052f5b4ff1d26b5985f1c3a5f672bbd6c512a0a1f1eade759169c8a40469b"
 dependencies = [
  "serde",
 ]
 
 [[package]]
-name = "cetkaik_interface"
-version = "0.1.0"
+name = "cetkaik_traits"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3695d04b0c0cee144c970ec55e2f55ca75a1607fc43bae9827ceb8c619c6479e"
 dependencies = [
  "cetkaik_fundamental",
 ]
 
 [[package]]
 name = "cetkaik_yhuap_move_candidates"
-version = "0.7.5"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f397e27b290fd13fa841e13a4e6660a603e890e909d701146ebcbe404583a94b"
 dependencies = [
  "cetkaik_fundamental",
- "cetkaik_interface",
+ "cetkaik_traits",
  "num",
 ]
 
