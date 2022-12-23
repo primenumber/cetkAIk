@@ -17,12 +17,12 @@ fn do_match<T: CetkaikRepresentation + Clone>(
     config: Config,
     ia_player: &mut dyn CetkaikEngine<T>,
     a_player: &mut dyn CetkaikEngine<T>,
-    quiet: bool,
+    hide_move: bool,
 ) {
     let mut state = initial_state().choose().0;
     let mut turn_count = 0;
     loop {
-        if !quiet {
+        if !hide_move {
             fn to_s(v: &[ColorAndProf]) -> String {
                 let mut s = String::new();
                 for (idx, &e) in v.iter().enumerate() {
@@ -53,7 +53,7 @@ fn do_match<T: CetkaikRepresentation + Clone>(
             break;
         }
         let pure_move = pure_move.unwrap();
-        if !quiet {
+        if !hide_move {
             println!("Move: {:?}", pure_move);
         }
         let hnr_state = match pure_move {
@@ -64,7 +64,7 @@ fn do_match<T: CetkaikRepresentation + Clone>(
                     .choose()
                     .0;
                 let aha_move = searcher.search_excited(&m, &ext_state).unwrap();
-                if !quiet {
+                if !hide_move {
                     println!("Move(excited): {:?}", aha_move);
                 }
                 apply_after_half_acceptance(&ext_state, aha_move, config)
@@ -84,7 +84,7 @@ fn do_match<T: CetkaikRepresentation + Clone>(
                 match searcher.search_hand_resolved(&he).unwrap() {
                     TymokOrTaxot_::Tymok(s) => state = s,
                     TymokOrTaxot_::Taxot(t) => {
-                        if !quiet {
+                        if !hide_move {
                             println!("Taxot!");
                         }
                         match t {
@@ -106,15 +106,36 @@ fn do_match<T: CetkaikRepresentation + Clone>(
     }
 }
 
+use clap::Parser;
+
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    // Name of the person to greet
+    // #[arg(short, long)]
+    // name: String,
+
+    /// Whether to show what hand was played
+    #[arg(short, long, default_value_t = true)]
+    log_move: bool,
+
+    /// How many matches to run
+    #[arg(short, long, default_value_t = 10)]
+    count: u8,
+}
+
 fn main() {
     let config = Config::cerke_online_alpha();
-    loop {
+
+    let args = Args::parse();
+
+    for _ in 0..args.count {
         // ここを CetkaikCore にすると古い遅い実装が走る
         do_match::<CetkaikCompact>(
             config,
             &mut GreedyPlayer::new(config),
             &mut GreedyPlayer::new(config),
-            false,
+            !args.log_move,
         );
     }
 }
