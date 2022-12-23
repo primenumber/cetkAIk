@@ -1,35 +1,40 @@
-use cetkaik_full_state_transition::state::*;
 use cetkaik_full_state_transition::message::*;
+use cetkaik_full_state_transition::state::*;
 use cetkaik_full_state_transition::*;
-use cetkaik_core::absolute::Side;
+use cetkaik_fundamental::AbsoluteSide;
+use cetkaik_traits::CetkaikRepresentation;
 
-pub struct HandExists {
-    pub if_tymok: GroundState,
-    pub if_taxot: IfTaxot,
+pub struct HandExists_<T: CetkaikRepresentation> {
+    pub if_tymok: GroundState_<T>,
+    pub if_taxot: IfTaxot_<T>,
 }
 
 #[derive(Clone)]
-pub enum TymokOrTaxot {
-    Tymok(GroundState),
-    Taxot(IfTaxot),
+pub enum TymokOrTaxot_<T: CetkaikRepresentation> {
+    Tymok(GroundState_<T>),
+    Taxot(IfTaxot_<T>),
 }
 
-pub trait CetkaikEngine {
-    fn search(&mut self, s: &GroundState) -> Option<PureMove>;
-    fn search_excited(&mut self, m: &InfAfterStep, s: &ExcitedState) -> Option<AfterHalfAcceptance>;
-    fn search_hand_resolved(&mut self, s: &HandExists) -> Option<TymokOrTaxot>;
+pub trait CetkaikEngine<T: CetkaikRepresentation> {
+    fn search(&mut self, s: &GroundState_<T>) -> Option<PureMove__<T::AbsoluteCoord>>;
+    fn search_excited(
+        &mut self,
+        m: &InfAfterStep_<T::AbsoluteCoord>,
+        s: &ExcitedState_<T>,
+    ) -> Option<AfterHalfAcceptance_<T::AbsoluteCoord>>;
+    fn search_hand_resolved(&mut self, s: &HandExists_<T>) -> Option<TymokOrTaxot_<T>>;
 }
 
-fn score_gs(s: &GroundState) -> i32 {
+fn score_gs<T: CetkaikRepresentation>(s: &GroundState_<T>) -> i32 {
     match s.whose_turn {
-        Side::IASide => s.scores.ia() - s.scores.a(),
-        Side::ASide => s.scores.a() - s.scores.ia(),
+        AbsoluteSide::IASide => s.scores.ia() - s.scores.a(),
+        AbsoluteSide::ASide => s.scores.a() - s.scores.ia(),
     }
 }
 
-pub fn score_hnr(s: &HandNotResolved) -> i32 {
+pub fn score_hnr<T: CetkaikRepresentation>(s: &HandNotResolved_<T>) -> i32 {
     match s.whose_turn {
-        Side::IASide => s.scores.ia() - s.scores.a(),
-        Side::ASide => s.scores.a() - s.scores.ia(),
+        AbsoluteSide::IASide => s.scores.ia() - s.scores.a(),
+        AbsoluteSide::ASide => s.scores.a() - s.scores.ia(),
     }
 }
