@@ -18,7 +18,8 @@ fn do_match<T: CetkaikRepresentation + Clone>(
     ia_player: &mut dyn CetkaikEngine<T>,
     a_player: &mut dyn CetkaikEngine<T>,
     hide_move: bool,
-    log_board: bool,
+    hide_board: bool,
+    hide_ciurl: bool,
 ) where
     T::AbsoluteField: PrintToConsole,
     T::AbsoluteCoord: std::fmt::Display,
@@ -26,7 +27,7 @@ fn do_match<T: CetkaikRepresentation + Clone>(
     let mut state: GroundState_<T> = initial_state().choose().0;
     let mut turn_count = 0;
     loop {
-        if log_board {
+        if !hide_board {
             println!("\n======================================");
             state.f.print_to_console();
         }
@@ -62,23 +63,33 @@ fn do_match<T: CetkaikRepresentation + Clone>(
             println!("Move (Debug): {:?}", pure_move);
             println!("Move (Display): {}", pure_move);
         }
-        let hnr_state = match pure_move {
-            PureMove__::NormalMove(m) => apply_normal_move(&state, m, config).unwrap().choose().0,
+        let (hnr_state, water_entry_ciurl) = match pure_move {
+            PureMove__::NormalMove(m) => apply_normal_move(&state, m, config).unwrap().choose(),
             PureMove__::InfAfterStep(m) => {
-                let ext_state = apply_inf_after_step::<T>(&state, m, config)
-                    .unwrap()
-                    .choose()
-                    .0;
-                let aha_move = searcher.search_excited(&m, &ext_state).unwrap();
+                let (ext_state, inf_after_step_ciurl) =
+                    apply_inf_after_step::<T>(&state, m, config)
+                        .unwrap()
+                        .choose();
+                if !hide_ciurl {
+                    println!("InfAfterStep ciurl: {:?}", inf_after_step_ciurl)
+                }
+                let aha_move: AfterHalfAcceptance_<T::AbsoluteCoord> =
+                    searcher.search_excited(&m, &ext_state, inf_after_step_ciurl).unwrap();
                 if !hide_move {
-                    println!("Move(excited): {:?}", aha_move);
+                    println!("Move (excited) (Debug): {:?}", aha_move);
+                    println!(
+                        "Move (excited) (Display): {}",
+                        aha_move.dest.map_or("None".to_string(), |c| c.to_string())
+                    );
                 }
                 apply_after_half_acceptance(&ext_state, aha_move, config)
                     .unwrap()
                     .choose()
-                    .0
             }
         };
+        if !hide_ciurl && water_entry_ciurl.is_some() {
+            println!("water entry ciurl: {:?}", water_entry_ciurl)
+        }
         let resolved = resolve(&hnr_state, config);
         match &resolved {
             HandResolved_::NeitherTymokNorTaxot(s) => state = s.clone(),
@@ -118,12 +129,16 @@ use clap::Parser;
 #[command(author, version, about, long_about = None)]
 struct Args {
     /// Don't show what move was played
-    #[arg(long, default_value_t = true)]
+    #[arg(long, default_value_t = false)]
     hide_move: bool,
 
     /// Don't print the board to console
-    #[arg(long, default_value_t = true)]
+    #[arg(long, default_value_t = false)]
     hide_board: bool,
+
+    /// Don't print the result of ciurl
+    #[arg(long, default_value_t = false)]
+    hide_ciurl: bool,
 
     /// How many matches to run
     #[arg(short, long, default_value_t = 1)]
@@ -142,7 +157,8 @@ fn main() {
             &mut GreedyPlayer::new(config),
             &mut GreedyPlayer::new(config),
             args.hide_move,
-            !args.hide_board,
+            args.hide_board,
+            args.hide_ciurl,
         );
     }
 }

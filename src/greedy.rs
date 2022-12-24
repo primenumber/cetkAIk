@@ -82,8 +82,10 @@ impl<T: CetkaikRepresentation + Clone> CetkaikEngine<T> for GreedyPlayer {
                     {
                         continue;
                     }
-                    let ext_state = apply_inf_after_step(s, *m, self.config).unwrap().choose().0;
-                    if let Some(aha_move) = self.search_excited(m, &ext_state) {
+                    let (ext_state, inf_after_step_ciurl) =
+                        apply_inf_after_step(s, *m, self.config).unwrap().choose();
+                    if let Some(aha_move) = self.search_excited(m, &ext_state, inf_after_step_ciurl)
+                    {
                         if aha_move.dest.is_none() {
                             continue;
                         }
@@ -109,6 +111,7 @@ impl<T: CetkaikRepresentation + Clone> CetkaikEngine<T> for GreedyPlayer {
         &mut self,
         m: &InfAfterStep_<T::AbsoluteCoord>,
         s: &ExcitedState_<T>,
+        ciurl: Option<usize>,
     ) -> Option<AfterHalfAcceptance_<T::AbsoluteCoord>> {
         let candidates = s.get_candidates(self.config);
         let mut best_move = None;
