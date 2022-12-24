@@ -73,8 +73,9 @@ fn do_match<T: CetkaikRepresentation + Clone>(
                 if !hide_ciurl {
                     println!("InfAfterStep ciurl: {:?}", inf_after_step_ciurl)
                 }
-                let aha_move: AfterHalfAcceptance_<T::AbsoluteCoord> =
-                    searcher.search_excited(&m, &ext_state, inf_after_step_ciurl).unwrap();
+                let aha_move: AfterHalfAcceptance_<T::AbsoluteCoord> = searcher
+                    .search_excited(&m, &ext_state, inf_after_step_ciurl)
+                    .unwrap();
                 if !hide_move {
                     println!("Move (excited) (Debug): {:?}", aha_move);
                     println!(
@@ -140,6 +141,10 @@ struct Args {
     #[arg(long, default_value_t = false)]
     hide_ciurl: bool,
 
+    /// Only print the winner
+    #[arg(long, default_value_t = false)]
+    quiet: bool,
+
     /// How many matches to run
     #[arg(short, long, default_value_t = 1)]
     count: u8,
@@ -156,9 +161,9 @@ fn main() {
             config,
             &mut GreedyPlayer::new(config),
             &mut GreedyPlayer::new(config),
-            args.hide_move,
-            args.hide_board,
-            args.hide_ciurl,
+            args.quiet || args.hide_move,
+            args.quiet || args.hide_board,
+            args.quiet || args.hide_ciurl,
         );
     }
 }
