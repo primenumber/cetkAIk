@@ -8,9 +8,10 @@ edition = "2021"
 [dependencies]
 cetkaik_calculate_hand = "1.0.0"
 cetkaik_fundamental = "1.0.0"
-cetkaik_full_state_transition = "1.0.0"
-cetkaik_traits = "1.0.0"
+cetkaik_full_state_transition = "1.0.1"
+cetkaik_traits = "1.0.1"
 cetkaik_yhuap_move_candidates = "1.0.0"
-cetkaik_compact_representation = "1.0.0"
+cetkaik_compact_representation = "1.0.2"
+cetkaik_render_to_console = "0.1.1"
 rand = { version = "0.8", features = ["small_rng"] }
 clap = { version = "4.0.32", features = ["derive"] }

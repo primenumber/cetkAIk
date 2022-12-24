@@ -14,6 +14,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "atty"
+version = "0.2.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d9b39be18770d11421cdb1b9947a45dd3f37e93092cbf377614828a319d5fee8"
+dependencies = [
+ "hermit-abi 0.1.19",
+ "libc",
+ "winapi",
+]
+
+[[package]]
 name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -39,6 +50,7 @@ dependencies = [
  "cetkaik_compact_representation",
  "cetkaik_full_state_transition",
  "cetkaik_fundamental",
+ "cetkaik_render_to_console",
  "cetkaik_traits",
  "cetkaik_yhuap_move_candidates",
  "clap",
@@ -60,9 +72,9 @@ dependencies = [
 
 [[package]]
 name = "cetkaik_compact_representation"
-version = "1.0.0"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "24a56d1181a54009f4eb99fa1e17acc947bea817d6340104c8c85bf9cec1c99a"
+checksum = "38584c85cd8918fe4618d28a97c04b7ca0acb159749d87792414f8cdce8d3ee3"
 dependencies = [
  "cetkaik_fundamental",
  "cetkaik_traits",
@@ -70,9 +82,9 @@ dependencies = [
 
 [[package]]
 name = "cetkaik_full_state_transition"
-version = "1.0.0"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a9092a91d6e63bc174e597143e259e14d68ee380f07b2fb97d7d54b4b37da968"
+checksum = "6d41432ce06ae2912fa90b2e33611fecf890e9885078d1af5cc2cd1758ca37d3"
 dependencies = [
  "cetkaik_calculate_hand",
  "cetkaik_fundamental",
@@ -96,10 +108,34 @@ dependencies = [
 ]
 
 [[package]]
-name = "cetkaik_traits"
-version = "1.0.0"
+name = "cetkaik_naive_representation"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3695d04b0c0cee144c970ec55e2f55ca75a1607fc43bae9827ceb8c619c6479e"
+checksum = "bb948b2aaf5fd3bda99331d02ea1cd664a9abe6c1744f05a40da056e3a85ff5d"
+dependencies = [
+ "cetkaik_fundamental",
+ "cetkaik_traits",
+ "serde",
+]
+
+[[package]]
+name = "cetkaik_render_to_console"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f219c34b7356b52463a8eac471620c106dcb9c246aa510db691d7f61a91de6a5"
+dependencies = [
+ "cetkaik_compact_representation",
+ "cetkaik_fundamental",
+ "cetkaik_naive_representation",
+ "cetkaik_traits",
+ "colored",
+]
+
+[[package]]
+name = "cetkaik_traits"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a6ec27a4843b1cfc3c36e012db9e9ef11730c30d1df0a0b19551fa82c0b2bf9"
 dependencies = [
  "cetkaik_fundamental",
 ]
@@ -156,6 +192,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0d4198f73e42b4936b35b5bb248d81d2b595ecb170da0bac7655c54eedfa8da8"
 dependencies = [
  "os_str_bytes",
+]
+
+[[package]]
+name = "colored"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b3616f750b84d8f0de8a58bda93e08e2a81ad3f523089b05f1dffecab48c6cbd"
+dependencies = [
+ "atty",
+ "lazy_static",
+ "winapi",
 ]
 
 [[package]]
@@ -216,6 +263,15 @@ checksum = "2540771e65fc8cb83cd6e8a237f70c319bd5c29f78ed1084ba5d50eeac86f7f9"
 
 [[package]]
 name = "hermit-abi"
+version = "0.1.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "62b467343b94ba476dcb2500d242dadbb39557df889310ac77c5d99100aaac33"
+dependencies = [
+ "libc",
+]
+
+[[package]]
+name = "hermit-abi"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ee512640fe35acbfb4bb779db6f0d80704c2cacfa2e39b601ef3e3f47d1ae4c7"
@@ -239,7 +295,7 @@ version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "28dfb6c8100ccc63462345b67d1bbc3679177c75ee4bf59bf29c8b1d110b8189"
 dependencies = [
- "hermit-abi",
+ "hermit-abi 0.2.6",
  "io-lifetimes",
  "rustix",
  "windows-sys",
@@ -250,6 +306,12 @@ name = "itoa"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4217ad341ebadf8d8e724e264f13e593e0648f5b3e94b3896a5df283be015ecc"
+
+[[package]]
+name = "lazy_static"
+version = "1.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
