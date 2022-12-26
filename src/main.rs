@@ -4,6 +4,7 @@ mod random_player;
 /// cerke_online の CPU 対戦でいま使われている実装【神機】（「気まぐれな機械」）の移植
 mod tun2_kik1;
 use cetkaik_compact_representation::CetkaikCompact;
+use cetkaik_engine::*;
 use cetkaik_full_state_transition::message::*;
 use cetkaik_full_state_transition::state::*;
 use cetkaik_full_state_transition::*;
@@ -12,8 +13,7 @@ use cetkaik_fundamental::ColorAndProf;
 use cetkaik_render_to_console::*;
 use cetkaik_traits::CetkaikRepresentation;
 use greedy::*;
-//use random_player::*;
-use cetkaik_engine::*;
+use random_player::*;
 
 fn do_match<T: CetkaikRepresentation + Clone>(
     config: Config,
@@ -22,7 +22,8 @@ fn do_match<T: CetkaikRepresentation + Clone>(
     hide_move: bool,
     hide_board: bool,
     hide_ciurl: bool,
-) where
+) -> Victor
+where
     T::AbsoluteField: PrintToConsole,
     T::AbsoluteCoord: std::fmt::Display,
 {
@@ -58,7 +59,7 @@ fn do_match<T: CetkaikRepresentation + Clone>(
         };
         let pure_move = searcher.search(&state);
         if pure_move.is_none() {
-            break;
+            panic!("No move possible");
         }
         let pure_move: PureMove__<T::AbsoluteCoord> = pure_move.unwrap();
         if !hide_move {
@@ -111,7 +112,7 @@ fn do_match<T: CetkaikRepresentation + Clone>(
                             IfTaxot_::NextSeason(ps) => state = ps.clone().choose().0,
                             IfTaxot_::VictoriousSide(v) => {
                                 println!("Won: {:?}", v);
-                                break;
+                                return v;
                             }
                         }
                     }
@@ -119,14 +120,15 @@ fn do_match<T: CetkaikRepresentation + Clone>(
             }
             HandResolved_::GameEndsWithoutTymokTaxot(v) => {
                 println!("Won: {:?}", v);
-                break;
+                return *v;
             }
         }
         turn_count += 1;
     }
 }
 
-use clap::Parser;
+use clap::{Parser, ValueEnum};
+use tun2_kik1::Tun2Kik1;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -150,22 +152,57 @@ struct Args {
     /// How many matches to run
     #[arg(short, long, default_value_t = 1)]
     count: u8,
+
+    /// The algorithm used by IASide
+    #[arg(long, value_enum, default_value_t = Mode::Greedy)]
+    ia_side: Mode,
+
+    /// The algorithm used by ASide
+    #[arg(long, value_enum, default_value_t = Mode::Greedy)]
+    a_side: Mode,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+enum Mode {
+    Random,
+    Greedy,
+    Tunkik,
+}
+
+impl Mode {
+    fn to_player<T: CetkaikRepresentation + Clone>(
+        self,
+        config: Config,
+    ) -> Box<dyn CetkaikEngine<T>> {
+        match self {
+            Mode::Random => Box::new(RandomPlayer::new(config)),
+            Mode::Greedy => Box::new(GreedyPlayer::new(config)),
+            Mode::Tunkik => Box::new(Tun2Kik1::new(config)),
+        }
+    }
 }
 
 fn main() {
+    use std::collections::HashMap;
     let config = Config::cerke_online_alpha();
 
     let args = Args::parse();
 
+    let mut win_count: HashMap<Victor, usize> = HashMap::new();
+
     for _ in 0..args.count {
         // ここを CetkaikCore にすると古い遅い実装が走る
-        do_match::<CetkaikCompact>(
+        let victor: Victor = do_match::<CetkaikCompact>(
             config,
-            &mut GreedyPlayer::new(config),
-            &mut GreedyPlayer::new(config),
+            &mut *args.ia_side.to_player(config),
+            &mut *args.a_side.to_player(config),
             args.quiet || args.hide_move,
             args.quiet || args.hide_board,
             args.quiet || args.hide_ciurl,
         );
+
+        *win_count.entry(victor).or_insert(0) += 1;
     }
+
+    println!("Final result: {:?}", win_count);
 }
