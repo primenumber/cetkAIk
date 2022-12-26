@@ -33,9 +33,21 @@ impl GreedyPlayer {
                 T::hop1zuo1_of(IASide, &hnr_state.f),
             ),
         };
+
         result += 2.0
             * calculate_hands_and_score_from_pieces(&player_hop1zuo1)
-                .unwrap()
+                .unwrap_or_else(|toomany| {
+                    panic!(
+                        "{:?}\nhnr_state.f: {:?}\nplayer_hop1zuo1: {}",
+                        toomany,
+                        hnr_state.f,
+                        player_hop1zuo1
+                            .iter()
+                            .map(|c| c.to_string())
+                            .collect::<Vec<_>>()
+                            .join(" ")
+                    )
+                })
                 .score as f32;
         result += player_hop1zuo1.len() as f32;
         result
