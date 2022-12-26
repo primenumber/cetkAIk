@@ -23,13 +23,15 @@ use crate::cetkaik_engine::{score_hnr, CetkaikEngine, HandExists_, TymokOrTaxot_
 pub struct Tun2Kik1 {
     config: Config,
     rng: SmallRng,
+    show_tactics_message: bool,
 }
 
 impl Tun2Kik1 {
-    pub fn new(config: Config) -> Tun2Kik1 {
+    pub fn new(config: Config, show_tactics_message: bool) -> Tun2Kik1 {
         Tun2Kik1 {
             config,
             rng: SmallRng::from_entropy(),
+            show_tactics_message,
         }
     }
 
@@ -48,7 +50,9 @@ impl Tun2Kik1 {
 impl<T: CetkaikRepresentation + Clone + std::fmt::Debug> CetkaikEngine<T> for Tun2Kik1 {
     fn search(&mut self, s: &GroundState_<T>) -> Option<PureMove__<T::AbsoluteCoord>> {
         let res = generate_move(&mut self.rng, self.config, s, s.tam_has_moved_previously);
-        println!("{}", res.tactics);
+        if self.show_tactics_message {
+            println!("{}", res.tactics);
+        }
         Some(res.bot_move.into())
     }
 
@@ -303,8 +307,6 @@ pub fn apply_move_assuming_every_luck_works<
     match cand {
         PureMove__::NormalMove(msg) => {
             let state = every_luck_works(apply_normal_move(old_state, msg, config).unwrap());
-            println!("state: {:?}", state);
-
             resolve(&state, config)
         }
         PureMove__::InfAfterStep(msg) => {
@@ -320,8 +322,6 @@ pub fn apply_move_assuming_every_luck_works<
                 )
                 .unwrap(),
             );
-
-            println!("hnr: {:?}", hnr);
             resolve(&hnr, config)
         }
     }
