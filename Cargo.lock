@@ -50,6 +50,7 @@ dependencies = [
  "cetkaik_compact_representation",
  "cetkaik_full_state_transition",
  "cetkaik_fundamental",
+ "cetkaik_naive_representation",
  "cetkaik_render_to_console",
  "cetkaik_traits",
  "cetkaik_yhuap_move_candidates",
@@ -72,9 +73,9 @@ dependencies = [
 
 [[package]]
 name = "cetkaik_compact_representation"
-version = "1.0.2"
+version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "38584c85cd8918fe4618d28a97c04b7ca0acb159749d87792414f8cdce8d3ee3"
+checksum = "f55d07f6dd91d1f3aeebf18ac9d77fbeaa2ac3f4b3b557632fc78b98a72ddd33"
 dependencies = [
  "cetkaik_fundamental",
  "cetkaik_traits",
@@ -82,9 +83,9 @@ dependencies = [
 
 [[package]]
 name = "cetkaik_full_state_transition"
-version = "1.0.1"
+version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d41432ce06ae2912fa90b2e33611fecf890e9885078d1af5cc2cd1758ca37d3"
+checksum = "adcd62ed1b29deb9395d1d571e570a1495dab44996b0b4c3befd6c2a38e6074d"
 dependencies = [
  "cetkaik_calculate_hand",
  "cetkaik_fundamental",
@@ -109,9 +110,9 @@ dependencies = [
 
 [[package]]
 name = "cetkaik_naive_representation"
-version = "1.0.1"
+version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bb948b2aaf5fd3bda99331d02ea1cd664a9abe6c1744f05a40da056e3a85ff5d"
+checksum = "14263d76bf78aa1d3789f592a76a1c7831d4d85cc0babb7bfdae1b683531acab"
 dependencies = [
  "cetkaik_fundamental",
  "cetkaik_traits",
@@ -133,18 +134,18 @@ dependencies = [
 
 [[package]]
 name = "cetkaik_traits"
-version = "1.0.1"
+version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6a6ec27a4843b1cfc3c36e012db9e9ef11730c30d1df0a0b19551fa82c0b2bf9"
+checksum = "feab4fbd58afa9431956564699dd85b460254e1eed1053ff941e92cd3a36ff96"
 dependencies = [
  "cetkaik_fundamental",
 ]
 
 [[package]]
 name = "cetkaik_yhuap_move_candidates"
-version = "1.0.0"
+version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f397e27b290fd13fa841e13a4e6660a603e890e909d701146ebcbe404583a94b"
+checksum = "c0991bbc43a797f16025f67af749baa10acf640cb550a72894f7c9e795643153"
 dependencies = [
  "cetkaik_fundamental",
  "cetkaik_traits",

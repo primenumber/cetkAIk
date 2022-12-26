@@ -1,3 +1,4 @@
+mod cerke_online_bot_port;
 mod cetkaik_engine;
 mod greedy;
 mod random_player;
