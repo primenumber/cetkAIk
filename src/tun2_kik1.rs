@@ -45,7 +45,7 @@ impl Tun2Kik1 {
     }
 }
 
-impl<T: CetkaikRepresentation + Clone> CetkaikEngine<T> for Tun2Kik1 {
+impl<T: CetkaikRepresentation + Clone + std::fmt::Debug> CetkaikEngine<T> for Tun2Kik1 {
     fn search(&mut self, s: &GroundState_<T>) -> Option<PureMove__<T::AbsoluteCoord>> {
         let res = generate_move(&mut self.rng, self.config, s, s.tam_has_moved_previously);
         println!("{}", res.tactics);
@@ -110,8 +110,7 @@ fn is_victorious_hand<T: CetkaikRepresentation>(
                 return false;
             };
 
-            return T::match_on_absolute_piece_and_apply(
-                piece,
+            return piece.match_on_piece_and_apply(
                 &|| panic!("tam cannot be captured, why is it in the destination?"),
                 &|color, prof, side| {
                     let mut hop1zuo1 = T::hop1zuo1_of(game_state.whose_turn, &game_state.f);
@@ -138,8 +137,7 @@ fn is_victorious_hand<T: CetkaikRepresentation>(
                 return false;
             };
 
-            return T::match_on_absolute_piece_and_apply(
-                piece,
+            return piece.match_on_piece_and_apply(
                 &|| panic!("tam cannot be captured, why is it in the destination?"),
                 &|color, prof, side| {
                     let mut hop1zuo1 = T::hop1zuo1_of(game_state.whose_turn, &game_state.f);
@@ -294,17 +292,21 @@ fn every_luck_works<T>(p: Probabilistic<T>) -> T {
     }
 }
 
-pub fn apply_move_assuming_every_luck_works<T: CetkaikRepresentation + std::clone::Clone>(
+pub fn apply_move_assuming_every_luck_works<
+    T: CetkaikRepresentation + std::clone::Clone + std::fmt::Debug,
+>(
     config: Config,
     cand: &PureMove_<T::AbsoluteCoord>,
     old_state: &GroundState_<T>,
 ) -> cetkaik_full_state_transition::state::HandResolved_<T> {
     let cand: PureMove__<T::AbsoluteCoord> = (*cand).into();
     match cand {
-        PureMove__::NormalMove(msg) => resolve(
-            &every_luck_works(apply_normal_move(old_state, msg, config).unwrap()),
-            config,
-        ),
+        PureMove__::NormalMove(msg) => {
+            let state = every_luck_works(apply_normal_move(old_state, msg, config).unwrap());
+            println!("state: {:?}", state);
+
+            resolve(&state, config)
+        }
         PureMove__::InfAfterStep(msg) => {
             let excited_state =
                 every_luck_works(apply_inf_after_step(old_state, msg, config).unwrap());
@@ -319,13 +321,14 @@ pub fn apply_move_assuming_every_luck_works<T: CetkaikRepresentation + std::clon
                 .unwrap(),
             );
 
+            println!("hnr: {:?}", hnr);
             resolve(&hnr, config)
         }
     }
 }
 
 /// 取られづらい激巫が作られているかを確認
-pub fn is_safe_gak_tuk_newly_generated<T: CetkaikRepresentation + Clone>(
+pub fn is_safe_gak_tuk_newly_generated<T: CetkaikRepresentation + Clone + std::fmt::Debug>(
     config: Config,
     cand: &PureMove_<T::AbsoluteCoord>,
     pure_game_state: &GroundState_<T>,
@@ -464,7 +467,7 @@ pub struct TacticsAndBotMove<Coord> {
 /// 4. 『負け確は避けよ』：取られづらくない駒で相手が役を作れて、それを避ける手があるなら、避ける手を指せ。一方で、「手を指した後で、取られづらくない駒で相手が役を作れる」もダメだなぁ。
 /// 5. 『激巫は行え』：取られづらい激巫を作ることができるなら、常にせよ。
 /// 6. 『ただ取りは行え』：駒を取ったとしてもそれがプレイヤーに取り返されづらい、かつ、その取る手そのものがやりづらくないなら、取る。
-pub fn generate_move<T: CetkaikRepresentation + Clone>(
+pub fn generate_move<T: CetkaikRepresentation + Clone + std::fmt::Debug>(
     rng: &mut SmallRng,
     config: Config,
     game_state: &GroundState_<T>,

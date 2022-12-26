@@ -10,6 +10,7 @@ use cetkaik_full_state_transition::state::*;
 use cetkaik_full_state_transition::*;
 use cetkaik_fundamental::AbsoluteSide::{ASide, IASide};
 use cetkaik_fundamental::ColorAndProf;
+use cetkaik_naive_representation::CetkaikNaive;
 use cetkaik_render_to_console::*;
 use cetkaik_traits::CetkaikRepresentation;
 use greedy::*;
@@ -154,30 +155,40 @@ struct Args {
     count: u8,
 
     /// The algorithm used by IASide
-    #[arg(long, value_enum, default_value_t = Mode::Greedy)]
-    ia_side: Mode,
+    #[arg(long, value_enum, default_value_t = Algorithm::Greedy)]
+    ia_side: Algorithm,
 
     /// The algorithm used by ASide
-    #[arg(long, value_enum, default_value_t = Mode::Greedy)]
-    a_side: Mode,
+    #[arg(long, value_enum, default_value_t = Algorithm::Greedy)]
+    a_side: Algorithm,
+
+    /// Internal implementation
+    #[arg(long, value_enum, default_value_t = Implementation::Compact)]
+    internal: Implementation,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-enum Mode {
+enum Algorithm {
     Random,
     Greedy,
     Tunkik,
 }
 
-impl Mode {
-    fn to_player<T: CetkaikRepresentation + Clone>(
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+enum Implementation {
+    Naive,
+    Compact,
+}
+
+impl Algorithm {
+    fn to_player<T: CetkaikRepresentation + Clone + std::fmt::Debug>(
         self,
         config: Config,
     ) -> Box<dyn CetkaikEngine<T>> {
         match self {
-            Mode::Random => Box::new(RandomPlayer::new(config)),
-            Mode::Greedy => Box::new(GreedyPlayer::new(config)),
-            Mode::Tunkik => Box::new(Tun2Kik1::new(config)),
+            Algorithm::Random => Box::new(RandomPlayer::new(config)),
+            Algorithm::Greedy => Box::new(GreedyPlayer::new(config)),
+            Algorithm::Tunkik => Box::new(Tun2Kik1::new(config)),
         }
     }
 }
@@ -191,15 +202,24 @@ fn main() {
     let mut win_count: HashMap<Victor, usize> = HashMap::new();
 
     for _ in 0..args.count {
-        // ここを CetkaikCore にすると古い遅い実装が走る
-        let victor: Victor = do_match::<CetkaikCompact>(
-            config,
-            &mut *args.ia_side.to_player(config),
-            &mut *args.a_side.to_player(config),
-            args.quiet || args.hide_move,
-            args.quiet || args.hide_board,
-            args.quiet || args.hide_ciurl,
-        );
+        let victor: Victor = match args.internal {
+            Implementation::Naive => do_match::<CetkaikNaive>(
+                config,
+                &mut *args.ia_side.to_player(config),
+                &mut *args.a_side.to_player(config),
+                args.quiet || args.hide_move,
+                args.quiet || args.hide_board,
+                args.quiet || args.hide_ciurl,
+            ),
+            Implementation::Compact => do_match::<CetkaikCompact>(
+                config,
+                &mut *args.ia_side.to_player(config),
+                &mut *args.a_side.to_player(config),
+                args.quiet || args.hide_move,
+                args.quiet || args.hide_board,
+                args.quiet || args.hide_ciurl,
+            ),
+        };
 
         *win_count.entry(victor).or_insert(0) += 1;
     }
