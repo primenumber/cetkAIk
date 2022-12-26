@@ -1,7 +1,8 @@
 use cetkaik_calculate_hand::calculate_hands_and_score_from_pieces;
-use cetkaik_full_state_transition::resolve;
+use cetkaik_full_state_transition::message::AfterHalfAcceptance_;
 use cetkaik_full_state_transition::state::HandResolved_;
 use cetkaik_full_state_transition::Config;
+use cetkaik_full_state_transition::{apply_after_half_acceptance, apply_inf_after_step, resolve};
 use cetkaik_full_state_transition::{
     apply_normal_move,
     message::{InfAfterStep_, NormalMove_, PureMove__},
@@ -10,7 +11,9 @@ use cetkaik_full_state_transition::{
 };
 use cetkaik_fundamental::{ColorAndProf, Profession, PureMove_};
 use cetkaik_traits::{CetkaikRepresentation, IsBoard, IsPieceWithSide};
-use cetkaik_yhuap_move_candidates::{is_tam_hue_relative, not_from_hop1zuo1_candidates_vec};
+use cetkaik_yhuap_move_candidates::{
+    is_tam_hue_relative, not_from_hop1zuo1_candidates_vec, AllowKut2Tam2,
+};
 
 fn is_victorious_hand<T: CetkaikRepresentation>(
     cand: PureMove_<T::AbsoluteCoord>,
@@ -117,6 +120,46 @@ pub fn is_very_likely_to_succeed<T: CetkaikRepresentation>(
     likely::<T>(cand, 2)
 }
 
+fn if_capture_get_coord<T: CetkaikRepresentation>(
+    cand: &PureMove_<T::AbsoluteCoord>,
+    pure_game_state: &GroundState_<T>,
+) -> Option<T::AbsoluteCoord> {
+    match cand {
+        PureMove_::NonTamMoveSrcDst { dest, .. } => {
+            if T::as_board_absolute(&pure_game_state.f)
+                .peek(*dest)
+                .is_some()
+            {
+                Some(*dest)
+            } else {
+                None
+            }
+        }
+        PureMove_::NonTamMoveSrcStepDstFinite { src, dest, .. }
+        | PureMove_::InfAfterStep {
+            src,
+            planned_direction: dest,
+            ..
+        } => {
+            // self-occlusion possible
+            if src == dest {
+                None
+            } else if T::as_board_absolute(&pure_game_state.f)
+                .peek(*dest)
+                .is_some()
+            {
+                Some(*dest)
+            } else {
+                None
+            }
+        }
+        PureMove_::NonTamMoveFromHopZuo { .. }
+        | PureMove_::TamMoveNoStep { .. }
+        | PureMove_::TamMoveStepsDuringFormer { .. }
+        | PureMove_::TamMoveStepsDuringLatter { .. } => None,
+    }
+}
+
 pub enum TacticsKey {
     VictoryAlmostCertain,
     StrengthenedShaman,
@@ -168,7 +211,22 @@ pub fn apply_move_assuming_every_luck_works<T: CetkaikRepresentation + std::clon
             &every_luck_works(apply_normal_move(old_state, msg, config).unwrap()),
             config,
         ),
-        PureMove__::InfAfterStep(_) => todo!(),
+        PureMove__::InfAfterStep(msg) => {
+            let excited_state =
+                every_luck_works(apply_inf_after_step(old_state, msg, config).unwrap());
+            let hnr = every_luck_works(
+                apply_after_half_acceptance(
+                    &excited_state,
+                    AfterHalfAcceptance_ {
+                        dest: Some(msg.planned_direction),
+                    },
+                    config,
+                )
+                .unwrap(),
+            );
+
+            resolve(&hnr, config)
+        }
     }
 }
 
@@ -440,24 +498,26 @@ pub fn generate_move<T: CetkaikRepresentation + Clone>(
             HandResolved_::GameEndsWithoutTymokTaxot(_) => panic!(), // この場合はもうなんでもいいや
         };
 
-        let player_candidates: Vec<PureMove_<T::AbsoluteCoord>> = not_from_hop1zuo1_candidates_vec::<T>(
-            &cetkaik_yhuap_move_candidates::AllowKut2Tam2 {
-                allow_kut2tam2: false,
-            },
-            config.tam_itself_is_tam_hue,
-            next.whose_turn,
-            &next.f,
-        );
+        let player_candidates: Vec<PureMove_<T::AbsoluteCoord>> =
+            not_from_hop1zuo1_candidates_vec::<T>(
+                &cetkaik_yhuap_move_candidates::AllowKut2Tam2 {
+                    allow_kut2tam2: false,
+                },
+                config.tam_itself_is_tam_hue,
+                next.whose_turn,
+                &next.f,
+            );
 
         for player_cand in player_candidates {
-            if is_victorious_hand(player_cand, &next) && is_likely_to_succeed::<T>(&player_cand.into()) {
+            if is_victorious_hand(player_cand, &next)
+                && is_likely_to_succeed::<T>(&player_cand.into())
+            {
                 //  in_danger: 避ける手を指せていなかったことが判明した以上、この bot_cand を破棄して別の手を試してみる
                 // !in_danger: 負けを確定させる手を指していた以上、この bot_cand を破棄して別の手を試してみる
                 continue 'bot_cand_loop;
             }
         }
 
-        
         // 5. 『激巫は行え』：取られづらい激巫を作ることができるなら、常にせよ。
         if is_safe_gak_tuk_newly_generated(config, bot_cand, game_state) {
             return TacticsAndBotMove {
@@ -465,30 +525,45 @@ pub fn generate_move<T: CetkaikRepresentation + Clone>(
                 bot_move: **bot_cand,
             };
         }
-        /*
         // 6. 『ただ取りは行え』：駒を取ったとしてもそれがプレイヤーに取り返されづらい、かつ、その取る手そのものがやりづらくないなら、取る。
-        const maybe_capture_coord: AbsoluteCoord | null = if_capture_get_coord(bot_cand, pure_game_state);
-        if (maybe_capture_coord) {
-            const next: PureGameState = apply_and_rotate(bot_cand, pure_game_state);
-            const player_candidates = not_from_hand_candidates(next);
+
+        let maybe_capture_coord = if_capture_get_coord(bot_cand, game_state);
+        if let Some(capture_coord) = maybe_capture_coord {
+            let next = apply_move_assuming_every_luck_works(config, bot_cand, game_state);
+            let next = match next {
+                HandResolved_::NeitherTymokNorTaxot(k) => k,
+                HandResolved_::HandExists { if_tymok, if_taxot } => if_tymok,
+                HandResolved_::GameEndsWithoutTymokTaxot(_) => panic!(), // この場合はもうなんでもいいや
+            };
+            let player_candidates = not_from_hop1zuo1_candidates_vec::<T>(
+                &AllowKut2Tam2 {
+                    allow_kut2tam2: false,
+                },
+                config.tam_itself_is_tam_hue,
+                next.whose_turn,
+                &next.f,
+            );
 
             // 取り返すような手があるか？
-            const take_back_exists = player_candidates.some(player_cand => {
-                const capture_coord2: AbsoluteCoord | null = if_capture_get_coord(player_cand, pure_game_state);
-                if (!capture_coord2) { return false; }
-                if (eq(maybe_capture_coord, capture_coord2)) {
+
+            let take_back_exists = player_candidates.iter().any(|player_cand| {
+                let capture_coord2 = if_capture_get_coord(player_cand, game_state);
+                let Some(capture_coord2) = capture_coord2 else { return false; };
+                if capture_coord == capture_coord2 {
                     // 取り返している
                     return true;
                 }
-                return false;
+                false
             });
 
             // 取り返せない、かつ、やりづらくない手であれば、指してみてもいいよね
-            if (!take_back_exists && is_likely_to_succeed(bot_cand, pure_game_state)) {
-                return { tactics: "free_lunch", bot_move: toBotMove(bot_cand) }
+            if !take_back_exists && is_likely_to_succeed::<T>(&(**bot_cand).into()) {
+                return TacticsAndBotMove {
+                    tactics: TacticsKey::FreeLunch,
+                    bot_move: **bot_cand,
+                };
             }
         }
-        */
 
         match bot_cand {
             PureMove_::NonTamMoveSrcDst { .. }
