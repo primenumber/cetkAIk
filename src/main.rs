@@ -156,7 +156,7 @@ struct Args {
 
     /// How many matches to run
     #[arg(short, long, default_value_t = 1)]
-    count: u8,
+    count: usize,
 
     /// The algorithm used by IASide
     #[arg(long, value_enum, default_value_t = Algorithm::Greedy)]
