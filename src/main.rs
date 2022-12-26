@@ -1,4 +1,5 @@
-mod cerke_online_bot_port;
+/// cerke_online の CPU 対戦でいま使われている実装【神機】（「気まぐれな機械」）の移植
+mod tun2_kik1;
 mod cetkaik_engine;
 mod greedy;
 mod random_player;
