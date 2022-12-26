@@ -188,7 +188,7 @@ impl Algorithm {
     fn to_player<T: CetkaikRepresentation + Clone + std::fmt::Debug>(
         self,
         config: Config,
-        hide_custom_message: bool
+        hide_custom_message: bool,
     ) -> Box<dyn CetkaikEngine<T>> {
         match self {
             Algorithm::Random => Box::new(RandomPlayer::new(config)),
@@ -213,16 +213,24 @@ fn main() {
         let (victor, turn_count) = match args.internal {
             Implementation::Naive => do_match::<CetkaikNaive>(
                 config,
-                &mut *args.ia_side.to_player(config, args.quiet || args.hide_custom_message),
-                &mut *args.a_side.to_player(config, args.quiet || args.hide_custom_message),
+                &mut *args
+                    .ia_side
+                    .to_player(config, args.quiet || args.hide_custom_message),
+                &mut *args
+                    .a_side
+                    .to_player(config, args.quiet || args.hide_custom_message),
                 args.quiet || args.hide_move,
                 args.quiet || args.hide_board,
                 args.quiet || args.hide_ciurl,
             ),
             Implementation::Compact => do_match::<CetkaikCompact>(
                 config,
-                &mut *args.ia_side.to_player(config, args.quiet || args.hide_custom_message),
-                &mut *args.a_side.to_player(config, args.quiet || args.hide_custom_message),
+                &mut *args
+                    .ia_side
+                    .to_player(config, args.quiet || args.hide_custom_message),
+                &mut *args
+                    .a_side
+                    .to_player(config, args.quiet || args.hide_custom_message),
                 args.quiet || args.hide_move,
                 args.quiet || args.hide_board,
                 args.quiet || args.hide_ciurl,
@@ -237,9 +245,41 @@ fn main() {
         "Statistics:
 ASide is {:?}, IASide is {:?}
 Winner: {win_count:?}
-average # of turns: {}",
+average # of turns: {}
+standard deviation of turns: {}
+",
         args.a_side,
         args.ia_side,
-        (turn_counts.iter().sum::<usize>() as f64) / (turn_counts.len() as f64),
+        mean(&turn_counts).unwrap(),
+        std_deviation(&turn_counts).unwrap(),
     );
+}
+
+fn mean(data: &[usize]) -> Option<f64> {
+    let sum = data.iter().sum::<usize>() as f64;
+    let len = data.len();
+
+    match len {
+        positive if positive > 0 => Some(sum / len as f64),
+        _ => None,
+    }
+}
+
+fn std_deviation(data: &[usize]) -> Option<f64> {
+    match (mean(data), data.len()) {
+        (Some(data_mean), len) if len > 0 => {
+            let variance = data
+                .iter()
+                .map(|value| {
+                    let diff = data_mean - (*value as f64);
+
+                    diff * diff
+                })
+                .sum::<f64>()
+                / len as f64;
+
+            Some(variance.sqrt())
+        }
+        _ => None,
+    }
 }
