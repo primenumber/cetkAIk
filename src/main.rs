@@ -1,8 +1,8 @@
-/// cerke_online の CPU 対戦でいま使われている実装【神機】（「気まぐれな機械」）の移植
-mod tun2_kik1;
 mod cetkaik_engine;
 mod greedy;
 mod random_player;
+/// cerke_online の CPU 対戦でいま使われている実装【神機】（「気まぐれな機械」）の移植
+mod tun2_kik1;
 use cetkaik_compact_representation::CetkaikCompact;
 use cetkaik_full_state_transition::message::*;
 use cetkaik_full_state_transition::state::*;

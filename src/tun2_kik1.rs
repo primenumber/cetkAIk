@@ -1,6 +1,6 @@
 use cetkaik_calculate_hand::calculate_hands_and_score_from_pieces;
 use cetkaik_full_state_transition::message::AfterHalfAcceptance_;
-use cetkaik_full_state_transition::state::HandResolved_;
+use cetkaik_full_state_transition::state::{ExcitedState_, HandNotResolved_, HandResolved_};
 use cetkaik_full_state_transition::Config;
 use cetkaik_full_state_transition::{apply_after_half_acceptance, apply_inf_after_step, resolve};
 use cetkaik_full_state_transition::{
@@ -14,6 +14,74 @@ use cetkaik_traits::{CetkaikRepresentation, IsBoard, IsPieceWithSide};
 use cetkaik_yhuap_move_candidates::{
     is_tam_hue_relative, not_from_hop1zuo1_candidates_vec, AllowKut2Tam2,
 };
+
+use rand::prelude::*;
+use rand::rngs::SmallRng;
+
+use crate::cetkaik_engine::{score_hnr, CetkaikEngine, HandExists_, TymokOrTaxot_};
+
+pub struct Tun2Kik1 {
+    config: Config,
+    rng: SmallRng,
+}
+
+impl Tun2Kik1 {
+    pub fn new(config: Config) -> Tun2Kik1 {
+        Tun2Kik1 {
+            config,
+            rng: SmallRng::from_entropy(),
+        }
+    }
+
+    fn eval<T: CetkaikRepresentation>(&self, hnr_state: &HandNotResolved_<T>) -> f32 {
+        let mut result = score_hnr(hnr_state) as f32;
+        let player_hop1zuo1 = T::hop1zuo1_of(hnr_state.whose_turn, &hnr_state.f);
+        result += 2.0
+            * calculate_hands_and_score_from_pieces(&player_hop1zuo1)
+                .unwrap()
+                .score as f32;
+        result += player_hop1zuo1.len() as f32;
+        result
+    }
+}
+
+impl<T: CetkaikRepresentation + Clone> CetkaikEngine<T> for Tun2Kik1 {
+    fn search(&mut self, s: &GroundState_<T>) -> Option<PureMove__<T::AbsoluteCoord>> {
+        let res = generate_move(&mut self.rng, self.config, s, s.tam_has_moved_previously);
+        println!("{}", res.tactics);
+        Some(res.bot_move.into())
+    }
+
+    fn search_excited(
+        &mut self,
+        m: &InfAfterStep_<T::AbsoluteCoord>,
+        s: &ExcitedState_<T>,
+        ciurl: Option<usize>,
+    ) -> Option<AfterHalfAcceptance_<T::AbsoluteCoord>> {
+        let candidates = s.get_candidates(self.config);
+        let mut best_move = None;
+        let mut best_score = -50.0;
+        for aha_move in candidates.iter() {
+            if aha_move.dest == Some(m.src) {
+                continue;
+            }
+            let hnr_state = apply_after_half_acceptance(s, *aha_move, self.config)
+                .unwrap()
+                .choose()
+                .0;
+            let score = self.eval(&hnr_state);
+            if score > best_score {
+                best_move = Some(aha_move);
+                best_score = score;
+            }
+        }
+        best_move.copied()
+    }
+
+    fn search_hand_resolved(&mut self, s: &HandExists_<T>) -> Option<TymokOrTaxot_<T>> {
+        Some(TymokOrTaxot_::Taxot(s.if_taxot.clone()))
+    }
+}
 
 fn is_victorious_hand<T: CetkaikRepresentation>(
     cand: PureMove_<T::AbsoluteCoord>,
@@ -167,6 +235,32 @@ pub enum TacticsKey {
     AvoidDefeat,
     LossAlmostCertain,
     Neutral,
+}
+
+impl std::fmt::Display for TacticsKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{} / {}",
+            match self {
+                TacticsKey::VictoryAlmostCertain => "我須上行。",
+                TacticsKey::StrengthenedShaman => "為激巫。",
+                TacticsKey::FreeLunch => "我為無与之手。",
+                TacticsKey::AvoidDefeat => "心為此而無行下行之道。",
+                TacticsKey::LossAlmostCertain => "為何即下行。行我心之道。",
+                TacticsKey::Neutral => "無心来為何善。行周時無下行之道。",
+            },
+            match self {
+                TacticsKey::VictoryAlmostCertain => "勝ち確",
+                TacticsKey::StrengthenedShaman => "激巫作成",
+                TacticsKey::FreeLunch => "ただ取り",
+                TacticsKey::AvoidDefeat => "負けを避けるためにこう指してみるか",
+                TacticsKey::LossAlmostCertain => "なにやっても負けそうなので好き勝手に指す",
+                TacticsKey::Neutral =>
+                    "いい手が思いつかなかったので、即負けしない範囲で好き勝手に指す",
+            }
+        )
+    }
 }
 
 fn is_tam_hue_absolute<T: CetkaikRepresentation>(
@@ -371,12 +465,11 @@ pub struct TacticsAndBotMove<Coord> {
 /// 5. 『激巫は行え』：取られづらい激巫を作ることができるなら、常にせよ。
 /// 6. 『ただ取りは行え』：駒を取ったとしてもそれがプレイヤーに取り返されづらい、かつ、その取る手そのものがやりづらくないなら、取る。
 pub fn generate_move<T: CetkaikRepresentation + Clone>(
+    rng: &mut SmallRng,
     config: Config,
     game_state: &GroundState_<T>,
     opponent_has_just_moved_tam: bool,
 ) -> TacticsAndBotMove<T::AbsoluteCoord> {
-    use rand::seq::SliceRandom;
-    let mut rng = rand::thread_rng();
     let mut raw_candidates = not_from_hop1zuo1_candidates_vec::<T>(
         &cetkaik_yhuap_move_candidates::AllowKut2Tam2 {
             allow_kut2tam2: false,
@@ -385,7 +478,7 @@ pub fn generate_move<T: CetkaikRepresentation + Clone>(
         game_state.whose_turn,
         &game_state.f,
     );
-    raw_candidates.shuffle(&mut rng);
+    raw_candidates.shuffle(rng);
 
     let candidates = raw_candidates
         .iter()
@@ -588,7 +681,7 @@ pub fn generate_move<T: CetkaikRepresentation + Clone>(
     if filtered_candidates.is_empty() {
         return TacticsAndBotMove {
             tactics: TacticsKey::LossAlmostCertain,
-            bot_move: **candidates.choose(&mut rand::thread_rng()).unwrap(),
+            bot_move: **candidates.choose(rng).unwrap(),
         };
     }
 
@@ -617,7 +710,7 @@ pub fn generate_move<T: CetkaikRepresentation + Clone>(
         false
     })();
 
-    let bot_cand = filtered_candidates.choose(&mut rand::thread_rng()).unwrap();
+    let bot_cand = filtered_candidates.choose(rng).unwrap();
     TacticsAndBotMove {
         tactics: if in_danger {
             TacticsKey::AvoidDefeat
