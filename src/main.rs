@@ -2,16 +2,17 @@ mod cetkaik_engine;
 mod greedy;
 mod random_player;
 use cetkaik_compact_representation::CetkaikCompact;
+use cetkaik_engine::*;
 use cetkaik_full_state_transition::message::*;
 use cetkaik_full_state_transition::state::*;
 use cetkaik_full_state_transition::*;
 use cetkaik_fundamental::AbsoluteSide::{ASide, IASide};
 use cetkaik_fundamental::ColorAndProf;
+use cetkaik_naive_representation::CetkaikNaive;
 use cetkaik_render_to_console::*;
 use cetkaik_traits::CetkaikRepresentation;
 use greedy::*;
-//use random_player::*;
-use cetkaik_engine::*;
+use random_player::*;
 
 fn do_match<T: CetkaikRepresentation + Clone>(
     config: Config,
@@ -20,7 +21,8 @@ fn do_match<T: CetkaikRepresentation + Clone>(
     hide_move: bool,
     hide_board: bool,
     hide_ciurl: bool,
-) where
+) -> Victor
+where
     T::AbsoluteField: PrintToConsole,
     T::AbsoluteCoord: std::fmt::Display,
 {
@@ -56,7 +58,7 @@ fn do_match<T: CetkaikRepresentation + Clone>(
         };
         let pure_move = searcher.search(&state);
         if pure_move.is_none() {
-            break;
+            panic!("No move possible");
         }
         let pure_move: PureMove__<T::AbsoluteCoord> = pure_move.unwrap();
         if !hide_move {
@@ -109,7 +111,7 @@ fn do_match<T: CetkaikRepresentation + Clone>(
                             IfTaxot_::NextSeason(ps) => state = ps.clone().choose().0,
                             IfTaxot_::VictoriousSide(v) => {
                                 println!("Won: {:?}", v);
-                                break;
+                                return v;
                             }
                         }
                     }
@@ -117,14 +119,14 @@ fn do_match<T: CetkaikRepresentation + Clone>(
             }
             HandResolved_::GameEndsWithoutTymokTaxot(v) => {
                 println!("Won: {:?}", v);
-                break;
+                return *v;
             }
         }
         turn_count += 1;
     }
 }
 
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -148,22 +150,74 @@ struct Args {
     /// How many matches to run
     #[arg(short, long, default_value_t = 1)]
     count: u8,
+
+    /// The algorithm used by IASide
+    #[arg(long, value_enum, default_value_t = Algorithm::Greedy)]
+    ia_side: Algorithm,
+
+    /// The algorithm used by ASide
+    #[arg(long, value_enum, default_value_t = Algorithm::Greedy)]
+    a_side: Algorithm,
+
+    /// Internal implementation
+    #[arg(long, value_enum, default_value_t = Implementation::Compact)]
+    internal: Implementation,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+enum Algorithm {
+    Random,
+    Greedy,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+enum Implementation {
+    Naive,
+    Compact,
+}
+
+impl Algorithm {
+    fn to_player<T: CetkaikRepresentation + Clone + std::fmt::Debug>(
+        self,
+        config: Config,
+    ) -> Box<dyn CetkaikEngine<T>> {
+        match self {
+            Algorithm::Random => Box::new(RandomPlayer::new(config)),
+            Algorithm::Greedy => Box::new(GreedyPlayer::new(config)),
+        }
+    }
 }
 
 fn main() {
+    use std::collections::HashMap;
     let config = Config::cerke_online_alpha();
 
     let args = Args::parse();
 
+    let mut win_count: HashMap<Victor, usize> = HashMap::new();
+
     for _ in 0..args.count {
-        // ここを CetkaikCore にすると古い遅い実装が走る
-        do_match::<CetkaikCompact>(
-            config,
-            &mut GreedyPlayer::new(config),
-            &mut GreedyPlayer::new(config),
-            args.quiet || args.hide_move,
-            args.quiet || args.hide_board,
-            args.quiet || args.hide_ciurl,
-        );
+        let victor: Victor = match args.internal {
+            Implementation::Naive => do_match::<CetkaikNaive>(
+                config,
+                &mut *args.ia_side.to_player(config),
+                &mut *args.a_side.to_player(config),
+                args.quiet || args.hide_move,
+                args.quiet || args.hide_board,
+                args.quiet || args.hide_ciurl,
+            ),
+            Implementation::Compact => do_match::<CetkaikCompact>(
+                config,
+                &mut *args.ia_side.to_player(config),
+                &mut *args.a_side.to_player(config),
+                args.quiet || args.hide_move,
+                args.quiet || args.hide_board,
+                args.quiet || args.hide_ciurl,
+            ),
+        };
+
+        *win_count.entry(victor).or_insert(0) += 1;
     }
+
+    println!("Final result: {:?}", win_count);
 }

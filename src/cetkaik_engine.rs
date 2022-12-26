@@ -21,7 +21,7 @@ pub trait CetkaikEngine<T: CetkaikRepresentation> {
         &mut self,
         m: &InfAfterStep_<T::AbsoluteCoord>,
         s: &ExcitedState_<T>,
-        ciurl: Option<usize>
+        ciurl: Option<usize>,
     ) -> Option<AfterHalfAcceptance_<T::AbsoluteCoord>>;
     fn search_hand_resolved(&mut self, s: &HandExists_<T>) -> Option<TymokOrTaxot_<T>>;
 }

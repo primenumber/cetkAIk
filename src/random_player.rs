@@ -32,7 +32,7 @@ impl<T: CetkaikRepresentation + Clone> CetkaikEngine<T> for RandomPlayer {
         &mut self,
         _m: &InfAfterStep_<T::AbsoluteCoord>,
         s: &ExcitedState_<T>,
-        inf_after_step_ciurl: Option<usize>
+        inf_after_step_ciurl: Option<usize>,
     ) -> Option<AfterHalfAcceptance_<T::AbsoluteCoord>> {
         let candidates = s.get_candidates(self.config);
         candidates.choose(&mut self.rng).copied()
