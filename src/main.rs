@@ -21,7 +21,7 @@ fn do_match<T: CetkaikRepresentation + Clone>(
     hide_move: bool,
     hide_board: bool,
     hide_ciurl: bool,
-) -> Victor
+) -> (Victor, usize)
 where
     T::AbsoluteField: PrintToConsole,
     T::AbsoluteCoord: std::fmt::Display,
@@ -110,16 +110,16 @@ where
                         match t {
                             IfTaxot_::NextSeason(ps) => state = ps.clone().choose().0,
                             IfTaxot_::VictoriousSide(v) => {
-                                println!("Won: {:?}", v);
-                                return v;
+                                println!("Won: {:?}\nTotal turns: {}\n", v, turn_count);
+                                return (v, turn_count);
                             }
                         }
                     }
                 }
             }
             HandResolved_::GameEndsWithoutTymokTaxot(v) => {
-                println!("Won: {:?}", v);
-                return *v;
+                println!("Won: {:?}\nTotal turns: {}\n", v, turn_count);
+                return (*v, turn_count);
             }
         }
         turn_count += 1;
@@ -196,8 +196,11 @@ fn main() {
 
     let mut win_count: HashMap<Victor, usize> = HashMap::new();
 
-    for _ in 0..args.count {
-        let victor: Victor = match args.internal {
+    let mut turn_counts = vec![];
+
+    for i in 0..args.count {
+        println!("match #{}", i);
+        let (victor, turn_count) = match args.internal {
             Implementation::Naive => do_match::<CetkaikNaive>(
                 config,
                 &mut *args.ia_side.to_player(config),
@@ -215,9 +218,10 @@ fn main() {
                 args.quiet || args.hide_ciurl,
             ),
         };
+        turn_counts.push(turn_count);
 
         *win_count.entry(victor).or_insert(0) += 1;
     }
 
-    println!("Final result: {:?}", win_count);
+    println!("Statistics: \nWinner: {win_count:?}\naverage # of turns: {}", (turn_counts.iter().sum::<usize>() as f64) / (turn_counts.len() as f64));
 }
