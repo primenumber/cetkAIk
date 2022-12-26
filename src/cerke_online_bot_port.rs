@@ -431,18 +431,33 @@ pub fn generate_move<T: CetkaikRepresentation + Clone>(
 
         //　in_danger: 避ける手を指せていたと仮定して、次の状態を呼び出し、
         // !in_danger: 次の状態を呼び出すと、今指したのが負けを確定させる手かどうかを調べることができる
-        /*
-        const next: PureGameState = apply_and_rotate(bot_cand, pure_game_state);
-        const player_candidates = not_from_hand_candidates(next);
-        for (const player_cand of player_candidates) {
-            if (is_victorious_hand(player_cand, next) && is_likely_to_succeed(player_cand, next)) {
 
+        let next: HandResolved_<T> =
+            apply_move_assuming_every_luck_works(config, bot_cand, game_state);
+        let next = match next {
+            HandResolved_::NeitherTymokNorTaxot(k) => k,
+            HandResolved_::HandExists { if_tymok, if_taxot } => if_tymok,
+            HandResolved_::GameEndsWithoutTymokTaxot(_) => panic!(), // この場合はもうなんでもいいや
+        };
+
+        let player_candidates: Vec<PureMove_<T::AbsoluteCoord>> = not_from_hop1zuo1_candidates_vec::<T>(
+            &cetkaik_yhuap_move_candidates::AllowKut2Tam2 {
+                allow_kut2tam2: false,
+            },
+            config.tam_itself_is_tam_hue,
+            next.whose_turn,
+            &next.f,
+        );
+
+        for player_cand in player_candidates {
+            if is_victorious_hand(player_cand, &next) && is_likely_to_succeed::<T>(&player_cand.into()) {
                 //  in_danger: 避ける手を指せていなかったことが判明した以上、この bot_cand を破棄して別の手を試してみる
                 // !in_danger: 負けを確定させる手を指していた以上、この bot_cand を破棄して別の手を試してみる
-                continue bot_cand_loop;
+                continue 'bot_cand_loop;
             }
         }
-        */
+
+        
         // 5. 『激巫は行え』：取られづらい激巫を作ることができるなら、常にせよ。
         if is_safe_gak_tuk_newly_generated(config, bot_cand, game_state) {
             return TacticsAndBotMove {
@@ -502,23 +517,38 @@ pub fn generate_move<T: CetkaikRepresentation + Clone>(
         };
     }
 
-    let in_danger = todo!() /* (|| {
-        const pure_game_state_inverted = toPureGameState(game_state, opponent_has_just_moved_tam, !ia_is_down_for_player_not_bot); // botの視点で盤面を生成
-        const candidates = not_from_hand_candidates(pure_game_state_inverted); // これで生成されるのはOpponentの動き、つまり bot の動き
-        for (const player_cand of candidates) {
-            if (is_victorious_hand(player_cand, pure_game_state_inverted) && is_likely_to_succeed(player_cand, pure_game_state_inverted)) {
+    let in_danger = (|| {
+        let game_state_inverted = GroundState_ {
+            whose_turn: !game_state.whose_turn,
+            ..(*game_state).clone()
+        };
+
+        let candidates = not_from_hop1zuo1_candidates_vec::<T>(
+            &cetkaik_yhuap_move_candidates::AllowKut2Tam2 {
+                allow_kut2tam2: false,
+            },
+            config.tam_itself_is_tam_hue,
+            game_state_inverted.whose_turn,
+            &game_state_inverted.f,
+        );
+
+        for player_cand in candidates {
+            if is_victorious_hand(player_cand, &game_state_inverted)
+                && is_likely_to_succeed::<T>(&player_cand.into())
+            {
                 return true;
             }
         }
-    })() */;
+        false
+    })();
 
     let bot_cand = filtered_candidates.choose(&mut rand::thread_rng()).unwrap();
-    return TacticsAndBotMove {
+    TacticsAndBotMove {
         tactics: if in_danger {
             TacticsKey::AvoidDefeat
         } else {
             TacticsKey::Neutral
         },
         bot_move: *bot_cand,
-    };
+    }
 }
