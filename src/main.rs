@@ -1,6 +1,8 @@
 mod cetkaik_engine;
 mod greedy;
 mod random_player;
+/// cerke_online の CPU 対戦でいま使われている実装【神機】（「気まぐれな機械」）の移植
+mod tun2_kik1;
 use cetkaik_compact_representation::CetkaikCompact;
 use cetkaik_engine::*;
 use cetkaik_full_state_transition::message::*;
@@ -127,6 +129,7 @@ where
 }
 
 use clap::{Parser, ValueEnum};
+use tun2_kik1::Tun2Kik1;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -168,6 +171,7 @@ struct Args {
 enum Algorithm {
     Random,
     Greedy,
+    Tunkik,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
@@ -184,6 +188,7 @@ impl Algorithm {
         match self {
             Algorithm::Random => Box::new(RandomPlayer::new(config)),
             Algorithm::Greedy => Box::new(GreedyPlayer::new(config)),
+            Algorithm::Tunkik => Box::new(Tun2Kik1::new(config)),
         }
     }
 }
