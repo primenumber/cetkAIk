@@ -95,12 +95,12 @@ fn is_victorious_hand<T: CetkaikRepresentation>(
         PureMove_::NonTamMoveFromHopZuo { .. }
         | PureMove_::TamMoveNoStep { .. }
         | PureMove_::TamMoveStepsDuringFormer { .. }
-        | PureMove_::TamMoveStepsDuringLatter { .. } => return false,
+        | PureMove_::TamMoveStepsDuringLatter { .. } => false,
 
         PureMove_::InfAfterStep {
             src,
-            step,
             planned_direction,
+            ..
         } => {
             if planned_direction == src {
                 // self-occlusion
@@ -114,18 +114,19 @@ fn is_victorious_hand<T: CetkaikRepresentation>(
                 return false;
             };
 
-            return piece.match_on_piece_and_apply(
+            piece.match_on_piece_and_apply(
                 &|| panic!("tam cannot be captured, why is it in the destination?"),
                 &|color, prof, side| {
+                    assert_ne!(side, game_state.whose_turn, "Trying to take an ally!");
                     let mut hop1zuo1 = T::hop1zuo1_of(game_state.whose_turn, &game_state.f);
                     let old_calc = calculate_hands_and_score_from_pieces(&hop1zuo1).unwrap();
 
                     hop1zuo1.push(ColorAndProf { color, prof });
                     let new_calc = calculate_hands_and_score_from_pieces(&hop1zuo1).unwrap();
 
-                    return new_calc.score != old_calc.score;
+                    new_calc.score != old_calc.score
                 },
-            );
+            )
         }
 
         PureMove_::NonTamMoveSrcDst { src, dest, .. }
@@ -141,20 +142,22 @@ fn is_victorious_hand<T: CetkaikRepresentation>(
                 return false;
             };
 
-            return piece.match_on_piece_and_apply(
+            piece.match_on_piece_and_apply(
                 &|| panic!("tam cannot be captured, why is it in the destination?"),
                 &|color, prof, side| {
+                    assert_ne!(side, game_state.whose_turn, "Trying to take an ally!");
+
                     let mut hop1zuo1 = T::hop1zuo1_of(game_state.whose_turn, &game_state.f);
                     let old_calc = calculate_hands_and_score_from_pieces(&hop1zuo1).unwrap();
 
                     hop1zuo1.push(ColorAndProf { color, prof });
                     let new_calc = calculate_hands_and_score_from_pieces(&hop1zuo1).unwrap();
 
-                    return new_calc.score != old_calc.score;
+                    new_calc.score != old_calc.score
                 },
-            );
+            )
         }
-    };
+    }
 }
 
 fn likely<T: CetkaikRepresentation>(
@@ -281,16 +284,9 @@ fn is_tam_hue_absolute<T: CetkaikRepresentation>(
 fn every_luck_works<T>(p: Probabilistic<T>) -> T {
     match p {
         Probabilistic::Pure(k) => k,
-        Probabilistic::Water { failure, success } => success,
-        Probabilistic::Sticks {
-            s0,
-            s1,
-            s2,
-            s3,
-            s4,
-            s5,
-        } => s5,
-        Probabilistic::WhoGoesFirst { ia_first, a_first } => {
+        Probabilistic::Water { success, .. } => success,
+        Probabilistic::Sticks { s5, .. } => s5,
+        Probabilistic::WhoGoesFirst { .. } => {
             panic!("WhoGoesFirst should not be given to `every_luck_works`")
         }
     }
@@ -342,7 +338,7 @@ pub fn is_safe_gak_tuk_newly_generated<T: CetkaikRepresentation + Clone + std::f
         apply_move_assuming_every_luck_works(config, cand, pure_game_state);
     let next = match next {
         HandResolved_::NeitherTymokNorTaxot(k) => k,
-        HandResolved_::HandExists { if_tymok, if_taxot } => if_tymok,
+        HandResolved_::HandExists { if_tymok, .. } => if_tymok,
         HandResolved_::GameEndsWithoutTymokTaxot(_) => return false, // この場合はもうなんでもいいや
     };
     let candidates: Vec<PureMove_<T::AbsoluteCoord>> = not_from_hop1zuo1_candidates_vec::<T>(
@@ -395,8 +391,8 @@ fn gak_tuk_newly_generated<T: CetkaikRepresentation>(
     match cand {
         PureMove_::TamMoveNoStep { .. }
         | PureMove_::TamMoveStepsDuringFormer { .. }
-        | PureMove_::TamMoveStepsDuringLatter { .. } => return None,
-        PureMove_::NonTamMoveFromHopZuo { color, prof, dest } => {
+        | PureMove_::TamMoveStepsDuringLatter { .. } => None,
+        PureMove_::NonTamMoveFromHopZuo { prof, dest, .. } => {
             if *prof != Profession::Tuk2 {
                 return None;
             }
@@ -411,7 +407,7 @@ fn gak_tuk_newly_generated<T: CetkaikRepresentation>(
             let Some(src_piece) = src_piece else { return None; };
             src_piece.match_on_piece_and_apply(
                 &|| panic!("Well, that should be TamMove"),
-                &|color, prof, side| {
+                &|_, prof, _| {
                     if prof != Profession::Tuk2 {
                         return None;
                     }
@@ -426,15 +422,15 @@ fn gak_tuk_newly_generated<T: CetkaikRepresentation>(
         }
         PureMove_::InfAfterStep {
             src,
-            step,
             planned_direction,
+            ..
         } => {
             let src_piece = T::as_board_absolute(&pure_game_state.f)
                 .peek(*src)
                 .expect("No piece at src");
             src_piece.match_on_piece_and_apply(
                 &|| panic!("Well, that should be TamMove"),
-                &|color, prof, side| {
+                &|_, prof, _| {
                     if prof != Profession::Tuk2 {
                         return None;
                     }
@@ -590,7 +586,7 @@ pub fn generate_move<T: CetkaikRepresentation + Clone + std::fmt::Debug>(
             apply_move_assuming_every_luck_works(config, bot_cand, game_state);
         let next = match next {
             HandResolved_::NeitherTymokNorTaxot(k) => k,
-            HandResolved_::HandExists { if_tymok, if_taxot } => if_tymok,
+            HandResolved_::HandExists { if_tymok, .. } => if_tymok,
             HandResolved_::GameEndsWithoutTymokTaxot(_) => panic!(), // この場合はもうなんでもいいや
         };
 
@@ -628,7 +624,7 @@ pub fn generate_move<T: CetkaikRepresentation + Clone + std::fmt::Debug>(
             let next = apply_move_assuming_every_luck_works(config, bot_cand, game_state);
             let next = match next {
                 HandResolved_::NeitherTymokNorTaxot(k) => k,
-                HandResolved_::HandExists { if_tymok, if_taxot } => if_tymok,
+                HandResolved_::HandExists { if_tymok, .. } => if_tymok,
                 HandResolved_::GameEndsWithoutTymokTaxot(_) => panic!(), // この場合はもうなんでもいいや
             };
             let player_candidates = not_from_hop1zuo1_candidates_vec::<T>(
