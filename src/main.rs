@@ -1,6 +1,7 @@
 mod cetkaik_engine;
 mod greedy;
 mod random_player;
+mod min_max_avg;
 /// cerke_online の CPU 対戦でいま使われている実装【神機】（「気まぐれな機械」）の移植
 mod tun2_kik1;
 use cetkaik_compact_representation::CetkaikCompact;
@@ -15,6 +16,7 @@ use cetkaik_render_to_console::*;
 use cetkaik_traits::CetkaikRepresentation;
 use greedy::*;
 use random_player::*;
+use min_max_avg::*;
 
 fn do_match<T: CetkaikRepresentation + Clone>(
     config: Config,
@@ -176,6 +178,7 @@ enum Algorithm {
     Random,
     Greedy,
     Tunkik,
+    MinMax,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
@@ -194,6 +197,7 @@ impl Algorithm {
             Algorithm::Random => Box::new(RandomPlayer::new(config)),
             Algorithm::Greedy => Box::new(GreedyPlayer::new(config)),
             Algorithm::Tunkik => Box::new(Tun2Kik1::new(config, !hide_custom_message)),
+            Algorithm::MinMax => Box::new(MinMaxPlayer::new(config)),
         }
     }
 }

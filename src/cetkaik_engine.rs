@@ -26,7 +26,7 @@ pub trait CetkaikEngine<T: CetkaikRepresentation> {
     fn search_hand_resolved(&mut self, s: &HandExists_<T>) -> Option<TymokOrTaxot_<T>>;
 }
 
-fn score_gs<T: CetkaikRepresentation>(s: &GroundState_<T>) -> i32 {
+pub fn score_gs<T: CetkaikRepresentation>(s: &GroundState_<T>) -> i32 {
     match s.whose_turn {
         AbsoluteSide::IASide => s.scores.ia() - s.scores.a(),
         AbsoluteSide::ASide => s.scores.a() - s.scores.ia(),
