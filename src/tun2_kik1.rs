@@ -329,6 +329,9 @@ pub fn is_safe_gak_tuk_newly_generated<T: CetkaikRepresentation + Clone + std::f
     cand: &PureMove_<T::AbsoluteCoord>,
     pure_game_state: &GroundState_<T>,
 ) -> bool {
+    if !is_likely_to_succeed::<T>(&(*cand).into()) {
+        return false;
+    }
     let tuk_coord = gak_tuk_newly_generated(cand, pure_game_state);
     let Some(tuk_coord) = tuk_coord else {
         return false;
