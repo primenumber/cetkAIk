@@ -4,7 +4,7 @@ use cetkaik_full_state_transition::message::*;
 use cetkaik_full_state_transition::state::*;
 use cetkaik_full_state_transition::*;
 use cetkaik_fundamental::AbsoluteSide::{ASide, IASide};
-use cetkaik_traits::CetkaikRepresentation;
+use cetkaik_traits::{CetkaikRepresentation, IsBoard};
 use rand::prelude::*;
 use rand::rngs::SmallRng;
 
@@ -23,7 +23,7 @@ impl GreedyPlayer {
 
     fn eval<T: CetkaikRepresentation>(&self, hnr_state: &HandNotResolved_<T>) -> f32 {
         let mut result = score_hnr(hnr_state) as f32;
-        let (player_hop1zuo1, opponent_hop1zuo1) = match hnr_state.whose_turn {
+        let (player_hop1zuo1, _opponent_hop1zuo1) = match hnr_state.whose_turn {
             IASide => (
                 T::hop1zuo1_of(IASide, &hnr_state.f),
                 T::hop1zuo1_of(ASide, &hnr_state.f),
@@ -70,7 +70,7 @@ impl<T: CetkaikRepresentation + Clone> CetkaikEngine<T> for GreedyPlayer {
                         NormalMove_::TamMoveStepsDuringLatter { .. } => continue,
                         NormalMove_::NonTamMoveSrcStepDstFinite { src, step, dest } => {
                             if Some(T::absolute_tam2())
-                                == T::absolute_get(T::as_board_absolute(&s.f), *step)
+                                == T::as_board_absolute(&s.f).peek(*step)
                                 || src == dest
                             {
                                 continue;
@@ -85,12 +85,12 @@ impl<T: CetkaikRepresentation + Clone> CetkaikEngine<T> for GreedyPlayer {
                 }
                 PureMove__::InfAfterStep(m) => {
                     if Some(T::absolute_tam2())
-                        == T::absolute_get(T::as_board_absolute(&s.f), m.src)
+                        == T::as_board_absolute(&s.f).peek(m.src)
                     {
                         continue;
                     }
                     if Some(T::absolute_tam2())
-                        == T::absolute_get(T::as_board_absolute(&s.f), m.step)
+                        == T::as_board_absolute(&s.f).peek(m.step)
                     {
                         continue;
                     }
@@ -123,7 +123,7 @@ impl<T: CetkaikRepresentation + Clone> CetkaikEngine<T> for GreedyPlayer {
         &mut self,
         m: &InfAfterStep_<T::AbsoluteCoord>,
         s: &ExcitedState_<T>,
-        ciurl: Option<usize>,
+        _ciurl: Option<usize>,
     ) -> Option<AfterHalfAcceptance_<T::AbsoluteCoord>> {
         let candidates = s.get_candidates(self.config);
         let mut best_move = None;
