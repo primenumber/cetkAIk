@@ -27,8 +27,8 @@ pub struct Tun2Kik1 {
 }
 
 impl Tun2Kik1 {
-    pub fn new(config: Config, show_tactics_message: bool) -> Tun2Kik1 {
-        Tun2Kik1 {
+    pub fn new(config: Config, show_tactics_message: bool) -> Self {
+        Self {
             config,
             rng: SmallRng::from_entropy(),
             show_tactics_message,
@@ -248,20 +248,20 @@ impl std::fmt::Display for TacticsKey {
             f,
             "{} / {}",
             match self {
-                TacticsKey::VictoryAlmostCertain => "我須上行。",
-                TacticsKey::StrengthenedShaman => "為激巫。",
-                TacticsKey::FreeLunch => "我為無与之手。",
-                TacticsKey::AvoidDefeat => "心為此而無行下行之道。",
-                TacticsKey::LossAlmostCertain => "為何即下行。行我心之道。",
-                TacticsKey::Neutral => "無心来為何善。行周時無下行之道。",
+                Self::VictoryAlmostCertain => "我須上行。",
+                Self::StrengthenedShaman => "為激巫。",
+                Self::FreeLunch => "我為無与之手。",
+                Self::AvoidDefeat => "心為此而無行下行之道。",
+                Self::LossAlmostCertain => "為何即下行。行我心之道。",
+                Self::Neutral => "無心来為何善。行周時無下行之道。",
             },
             match self {
-                TacticsKey::VictoryAlmostCertain => "勝ち確",
-                TacticsKey::StrengthenedShaman => "激巫作成",
-                TacticsKey::FreeLunch => "ただ取り",
-                TacticsKey::AvoidDefeat => "負けを避けるためにこう指してみるか",
-                TacticsKey::LossAlmostCertain => "なにやっても負けそうなので好き勝手に指す",
-                TacticsKey::Neutral =>
+                Self::VictoryAlmostCertain => "勝ち確",
+                Self::StrengthenedShaman => "激巫作成",
+                Self::FreeLunch => "ただ取り",
+                Self::AvoidDefeat => "負けを避けるためにこう指してみるか",
+                Self::LossAlmostCertain => "なにやっても負けそうなので好き勝手に指す",
+                Self::Neutral =>
                     "いい手が思いつかなかったので、即負けしない範囲で好き勝手に指す",
             }
         )
