@@ -1,7 +1,9 @@
+#![warn(clippy::pedantic, clippy::nursery)]
+#![allow(clippy::wildcard_imports, clippy::cast_precision_loss)]
 mod cetkaik_engine;
 mod greedy;
-mod random_player;
 mod min_max_avg;
+mod random_player;
 /// cerke_online の CPU 対戦でいま使われている実装【神機】（「気まぐれな機械」）の移植
 mod tun2_kik1;
 use cetkaik_compact_representation::CetkaikCompact;
@@ -15,8 +17,8 @@ use cetkaik_naive_representation::CetkaikNaive;
 use cetkaik_render_to_console::*;
 use cetkaik_traits::CetkaikRepresentation;
 use greedy::*;
-use random_player::*;
 use min_max_avg::*;
+use random_player::*;
 
 fn do_match<T: CetkaikRepresentation + Clone>(
     config: Config,
@@ -40,7 +42,7 @@ where
         if !hide_move {
             fn to_s(v: &[ColorAndProf]) -> String {
                 v.iter()
-                    .map(|p| p.to_string())
+                    .map(std::string::ToString::to_string)
                     .collect::<Vec<_>>()
                     .join(" ")
             }
@@ -61,13 +63,12 @@ where
             ASide => a_player,
         };
         let pure_move = searcher.search(&state);
-        if pure_move.is_none() {
+        let Some(pure_move) = pure_move else {
             panic!("No move possible");
-        }
-        let pure_move: PureMove__<T::AbsoluteCoord> = pure_move.unwrap();
+        };
         if !hide_move {
-            println!("Move (Debug): {:?}", pure_move);
-            println!("Move (Display): {}", pure_move);
+            println!("Move (Debug): {pure_move:?}");
+            println!("Move (Display): {pure_move}");
         }
         let (hnr_state, water_entry_ciurl) = match pure_move {
             PureMove__::NormalMove(m) => apply_normal_move(&state, m, config).unwrap().choose(),
@@ -77,13 +78,13 @@ where
                         .unwrap()
                         .choose();
                 if !hide_ciurl {
-                    println!("InfAfterStep ciurl: {:?}", inf_after_step_ciurl)
+                    println!("InfAfterStep ciurl: {inf_after_step_ciurl:?}");
                 }
                 let aha_move: AfterHalfAcceptance_<T::AbsoluteCoord> = searcher
                     .search_excited(&m, &ext_state, inf_after_step_ciurl)
                     .unwrap();
                 if !hide_move {
-                    println!("Move (excited) (Debug): {:?}", aha_move);
+                    println!("Move (excited) (Debug): {aha_move:?}");
                     println!(
                         "Move (excited) (Display): {}",
                         aha_move.dest.map_or("None".to_string(), |c| c.to_string())
@@ -95,7 +96,7 @@ where
             }
         };
         if !hide_ciurl && water_entry_ciurl.is_some() {
-            println!("water entry ciurl: {:?}", water_entry_ciurl)
+            println!("water entry ciurl: {water_entry_ciurl:?}");
         }
         let resolved = resolve(&hnr_state, config);
         match &resolved {
@@ -114,7 +115,7 @@ where
                         match t {
                             IfTaxot_::NextSeason(ps) => state = ps.clone().choose().0,
                             IfTaxot_::VictoriousSide(v) => {
-                                println!("Won: {:?}\nTotal turns: {}\n", v, turn_count);
+                                println!("Won: {v:?}\nTotal turns: {turn_count}\n");
                                 return (v, turn_count);
                             }
                         }
@@ -122,7 +123,7 @@ where
                 }
             }
             HandResolved_::GameEndsWithoutTymokTaxot(v) => {
-                println!("Won: {:?}\nTotal turns: {}\n", v, turn_count);
+                println!("Won: {v:?}\nTotal turns: {turn_count}\n");
                 return (*v, turn_count);
             }
         }
@@ -135,6 +136,7 @@ use tun2_kik1::Tun2Kik1;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
+#[allow(clippy::struct_excessive_bools)]
 struct Args {
     /// Don't show what move was played
     #[arg(long, default_value_t = false)]
@@ -194,10 +196,10 @@ impl Algorithm {
         hide_custom_message: bool,
     ) -> Box<dyn CetkaikEngine<T>> {
         match self {
-            Algorithm::Random => Box::new(RandomPlayer::new(config)),
-            Algorithm::Greedy => Box::new(GreedyPlayer::new(config)),
-            Algorithm::Tunkik => Box::new(Tun2Kik1::new(config, !hide_custom_message)),
-            Algorithm::MinMax => Box::new(MinMaxPlayer::new(config)),
+            Self::Random => Box::new(RandomPlayer::new(config)),
+            Self::Greedy => Box::new(GreedyPlayer::new(config)),
+            Self::Tunkik => Box::new(Tun2Kik1::new(config, !hide_custom_message)),
+            Self::MinMax => Box::new(MinMaxPlayer::new(config)),
         }
     }
 }
@@ -213,7 +215,7 @@ fn main() {
     let mut turn_counts = vec![];
 
     for i in 0..args.count {
-        println!("match #{}", i);
+        println!("match #{i}");
         let (victor, turn_count) = match args.internal {
             Implementation::Naive => do_match::<CetkaikNaive>(
                 config,

@@ -12,8 +12,8 @@ pub struct RandomPlayer {
 }
 
 impl RandomPlayer {
-    pub fn new(config: Config) -> RandomPlayer {
-        RandomPlayer {
+    pub fn new(config: Config) -> Self {
+        Self {
             config,
             rng: SmallRng::from_entropy(),
         }
@@ -25,7 +25,7 @@ impl<T: CetkaikRepresentation + Clone> CetkaikEngine<T> for RandomPlayer {
         let (hop1zuo1_candidates, candidates) = s.get_candidates(self.config);
         let pure_move_1 = hop1zuo1_candidates.choose(&mut self.rng);
         let pure_move_2 = candidates.choose(&mut self.rng);
-        pure_move_1.or(pure_move_2).cloned()
+        pure_move_1.or(pure_move_2).copied()
     }
 
     fn search_excited(

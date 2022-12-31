@@ -14,8 +14,8 @@ pub struct GreedyPlayer {
 }
 
 impl GreedyPlayer {
-    pub fn new(config: Config) -> GreedyPlayer {
-        GreedyPlayer {
+    pub fn new(config: Config) -> Self {
+        Self {
             config,
             rng: SmallRng::from_entropy(),
         }
@@ -43,7 +43,7 @@ impl GreedyPlayer {
                         hnr_state.f,
                         player_hop1zuo1
                             .iter()
-                            .map(|c| c.to_string())
+                            .map(std::string::ToString::to_string)
                             .collect::<Vec<_>>()
                             .join(" ")
                     )
@@ -61,16 +61,15 @@ impl<T: CetkaikRepresentation + Clone> CetkaikEngine<T> for GreedyPlayer {
         let mut best_score = -50.0;
         candidates.shuffle(&mut self.rng);
         candidates.extend(hop1zuo1_candidates);
-        for pure_move in candidates.iter() {
+        for pure_move in &candidates {
             let hnr_state = match pure_move {
                 PureMove__::NormalMove(m) => {
                     match m {
-                        NormalMove_::TamMoveNoStep { .. } => continue,
-                        NormalMove_::TamMoveStepsDuringFormer { .. } => continue,
-                        NormalMove_::TamMoveStepsDuringLatter { .. } => continue,
+                        NormalMove_::TamMoveStepsDuringFormer { .. }
+                        | NormalMove_::TamMoveNoStep { .. }
+                        | NormalMove_::TamMoveStepsDuringLatter { .. } => continue,
                         NormalMove_::NonTamMoveSrcStepDstFinite { src, step, dest } => {
-                            if Some(T::absolute_tam2())
-                                == T::as_board_absolute(&s.f).peek(*step)
+                            if Some(T::absolute_tam2()) == T::as_board_absolute(&s.f).peek(*step)
                                 || src == dest
                             {
                                 continue;
@@ -84,14 +83,10 @@ impl<T: CetkaikRepresentation + Clone> CetkaikEngine<T> for GreedyPlayer {
                         .0
                 }
                 PureMove__::InfAfterStep(m) => {
-                    if Some(T::absolute_tam2())
-                        == T::as_board_absolute(&s.f).peek(m.src)
-                    {
+                    if Some(T::absolute_tam2()) == T::as_board_absolute(&s.f).peek(m.src) {
                         continue;
                     }
-                    if Some(T::absolute_tam2())
-                        == T::as_board_absolute(&s.f).peek(m.step)
-                    {
+                    if Some(T::absolute_tam2()) == T::as_board_absolute(&s.f).peek(m.step) {
                         continue;
                     }
                     let (ext_state, inf_after_step_ciurl) =
@@ -116,7 +111,7 @@ impl<T: CetkaikRepresentation + Clone> CetkaikEngine<T> for GreedyPlayer {
                 best_score = score;
             }
         }
-        best_move.cloned()
+        best_move.copied()
     }
 
     fn search_excited(
@@ -128,7 +123,7 @@ impl<T: CetkaikRepresentation + Clone> CetkaikEngine<T> for GreedyPlayer {
         let candidates = s.get_candidates(self.config);
         let mut best_move = None;
         let mut best_score = -50.0;
-        for aha_move in candidates.iter() {
+        for aha_move in &candidates {
             if aha_move.dest == Some(m.src) {
                 continue;
             }
