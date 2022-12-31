@@ -19,7 +19,7 @@ impl MinMaxPlayer {
     }
 
     fn eval<T: CetkaikRepresentation + Clone>(&self, state: &GroundState_<T>) -> i32 {
-        let mut result = score_gs(&state);
+        let mut result = score_gs(state);
         let (player_hop1zuo1, opponent_hop1zuo1) = match state.whose_turn {
             AbsoluteSide::IASide => (
                 T::hop1zuo1_of(AbsoluteSide::IASide, &state.f),
@@ -58,7 +58,7 @@ impl MinMaxPlayer {
                     }
                     _ => panic!("should not be given"),
                 };
-                score_gs(&s) * SCORE_SCALE
+                score_gs(s) * SCORE_SCALE
             }
             IfTaxot_::VictoriousSide(v) => if v.0 == Some(player) {
                 40 * SCORE_SCALE
@@ -80,8 +80,8 @@ impl MinMaxPlayer {
                 self.eval_hand_resolved_recursive(k.whose_turn, &resolved, depth, node_count)
             }
             Probabilistic::Water { failure, success } => {
-                let resolved_failure = resolve(&failure, self.config);
-                let resolved_success = resolve(&success, self.config);
+                let resolved_failure = resolve(failure, self.config);
+                let resolved_success = resolve(success, self.config);
                 let sum = self.eval_hand_resolved_recursive(
                     failure.whose_turn,
                     &resolved_failure,
@@ -111,12 +111,12 @@ impl MinMaxPlayer {
             Probabilistic::Pure(_) => panic!("Pure should not be given"),
             Probabilistic::Water { .. } => panic!("Water should not be given"),
             Probabilistic::Sticks {
-                s0,
+                s0: _,
                 s1,
                 s2,
                 s3,
                 s4,
-                s5,
+                s5: _,
             } => {
                 //let sum = 1 * self.eval_excited_recursive(msg, &s0, Some(0), depth, node_count)
                 //    + 5 * self.eval_excited_recursive(msg, &s1, Some(1), depth, node_count)
@@ -124,11 +124,12 @@ impl MinMaxPlayer {
                 //    + 10 * self.eval_excited_recursive(msg, &s3, Some(3), depth, node_count)
                 //    + 5 * self.eval_excited_recursive(msg, &s4, Some(4), depth, node_count)
                 //    + 1 * self.eval_excited_recursive(msg, &s5, Some(5), depth, node_count);
+                #[allow(clippy::identity_op)]
                 let sum = 
-                    1 * self.eval_excited_recursive(msg, &s1, Some(1), depth, node_count)
-                    + 2 * self.eval_excited_recursive(msg, &s2, Some(2), depth, node_count)
-                    + 2 * self.eval_excited_recursive(msg, &s3, Some(3), depth, node_count)
-                    + 1 * self.eval_excited_recursive(msg, &s4, Some(4), depth, node_count);
+                    1 * self.eval_excited_recursive(msg, s1, Some(1), depth, node_count)
+                    + 2 * self.eval_excited_recursive(msg, s2, Some(2), depth, node_count)
+                    + 2 * self.eval_excited_recursive(msg, s3, Some(3), depth, node_count)
+                    + 1 * self.eval_excited_recursive(msg, s4, Some(4), depth, node_count);
                 sum / 6
             }
             Probabilistic::WhoGoesFirst { .. } => {
@@ -227,10 +228,10 @@ impl MinMaxPlayer {
         *node_count += 1;
         match state {
             HandResolved_::NeitherTymokNorTaxot(s) => {
-                -self.eval_ground_recursive(&s, depth - 1, node_count)
+                -self.eval_ground_recursive(s, depth - 1, node_count)
             }
             HandResolved_::HandExists { if_tymok, if_taxot } => std::cmp::max(
-                -self.eval_ground_recursive(&if_tymok, depth - 1, node_count),
+                -self.eval_ground_recursive(if_tymok, depth - 1, node_count),
                 self.eval_taxot(whose_turn, if_taxot),
             ),
             HandResolved_::GameEndsWithoutTymokTaxot(v) => if v.0 == Some(whose_turn) {
