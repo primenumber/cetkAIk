@@ -19,6 +19,7 @@ use cetkaik_traits::CetkaikRepresentation;
 use greedy::*;
 use min_max_avg::*;
 use random_player::*;
+use cetkaik_traits::IsAbsoluteField;
 
 fn do_match<T: CetkaikRepresentation + Clone>(
     config: Config,
@@ -54,8 +55,8 @@ where
                 state.season,
                 state.scores.ia(),
                 state.scores.a(),
-                to_s(&T::hop1zuo1_of(IASide, &state.f)),
-                to_s(&T::hop1zuo1_of(ASide, &state.f)),
+                to_s(&state.f.hop1zuo1_of(IASide).collect::<Vec<_>>()),
+                to_s(&state.f.hop1zuo1_of(ASide).collect::<Vec<_>>()),
             );
         }
         let searcher: &mut dyn CetkaikEngine<T> = match state.whose_turn {

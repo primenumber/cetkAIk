@@ -26,14 +26,14 @@ pub trait CetkaikEngine<T: CetkaikRepresentation> {
     fn search_hand_resolved(&mut self, s: &HandExists_<T>) -> Option<TymokOrTaxot_<T>>;
 }
 
-pub fn score_gs<T: CetkaikRepresentation>(s: &GroundState_<T>) -> i32 {
+pub const fn score_gs<T: CetkaikRepresentation>(s: &GroundState_<T>) -> i32 {
     match s.whose_turn {
         AbsoluteSide::IASide => s.scores.ia() - s.scores.a(),
         AbsoluteSide::ASide => s.scores.a() - s.scores.ia(),
     }
 }
 
-pub fn score_hnr<T: CetkaikRepresentation>(s: &HandNotResolved_<T>) -> i32 {
+pub const fn score_hnr<T: CetkaikRepresentation>(s: &HandNotResolved_<T>) -> i32 {
     match s.whose_turn {
         AbsoluteSide::IASide => s.scores.ia() - s.scores.a(),
         AbsoluteSide::ASide => s.scores.a() - s.scores.ia(),

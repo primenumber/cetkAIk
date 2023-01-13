@@ -20,17 +20,10 @@ impl MinMaxPlayer {
 
     #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
     fn eval<T: CetkaikRepresentation + Clone>(&self, state: &GroundState_<T>) -> i32 {
+        use cetkaik_traits::IsAbsoluteField;
         let mut result = score_gs(state);
-        let (player_hop1zuo1, opponent_hop1zuo1) = match state.whose_turn {
-            AbsoluteSide::IASide => (
-                T::hop1zuo1_of(AbsoluteSide::IASide, &state.f),
-                T::hop1zuo1_of(AbsoluteSide::ASide, &state.f),
-            ),
-            AbsoluteSide::ASide => (
-                T::hop1zuo1_of(AbsoluteSide::ASide, &state.f),
-                T::hop1zuo1_of(AbsoluteSide::IASide, &state.f),
-            ),
-        };
+        let player_hop1zuo1: Vec<_> = state.f.hop1zuo1_of(state.whose_turn).collect();
+        let opponent_hop1zuo1: Vec<_> = state.f.hop1zuo1_of(!state.whose_turn).collect();
         result += 2
             * calculate_hands_and_score_from_pieces(&player_hop1zuo1)
                 .unwrap()
@@ -192,7 +185,7 @@ impl MinMaxPlayer {
                         return None;
                     }
                     Some(self.eval_prob_excited(
-                        m,
+                        &m,
                         &apply_inf_after_step(state, *m, self.config).unwrap(),
                         depth,
                         node_count,
@@ -296,7 +289,7 @@ impl<T: CetkaikRepresentation + Clone> CetkaikEngine<T> for MinMaxPlayer {
                         continue;
                     }
                     self.eval_prob_excited(
-                        m,
+                        &m,
                         &apply_inf_after_step(state, *m, self.config).unwrap(),
                         depth,
                         &mut node_count,

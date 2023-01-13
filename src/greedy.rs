@@ -3,7 +3,7 @@ use cetkaik_calculate_hand::*;
 use cetkaik_full_state_transition::message::*;
 use cetkaik_full_state_transition::state::*;
 use cetkaik_full_state_transition::*;
-use cetkaik_fundamental::AbsoluteSide::{ASide, IASide};
+use cetkaik_traits::IsAbsoluteField;
 use cetkaik_traits::{CetkaikRepresentation, IsBoard};
 use rand::prelude::*;
 use rand::rngs::SmallRng;
@@ -23,17 +23,7 @@ impl GreedyPlayer {
 
     fn eval<T: CetkaikRepresentation>(&self, hnr_state: &HandNotResolved_<T>) -> f32 {
         let mut result = score_hnr(hnr_state) as f32;
-        let (player_hop1zuo1, _opponent_hop1zuo1) = match hnr_state.whose_turn {
-            IASide => (
-                T::hop1zuo1_of(IASide, &hnr_state.f),
-                T::hop1zuo1_of(ASide, &hnr_state.f),
-            ),
-            ASide => (
-                T::hop1zuo1_of(ASide, &hnr_state.f),
-                T::hop1zuo1_of(IASide, &hnr_state.f),
-            ),
-        };
-
+        let player_hop1zuo1: Vec<_> = hnr_state.f.hop1zuo1_of(hnr_state.whose_turn).collect();
         result += 2.0
             * calculate_hands_and_score_from_pieces(&player_hop1zuo1)
                 .unwrap_or_else(|toomany| {
@@ -91,7 +81,7 @@ impl<T: CetkaikRepresentation + Clone> CetkaikEngine<T> for GreedyPlayer {
                     }
                     let (ext_state, inf_after_step_ciurl) =
                         apply_inf_after_step(s, *m, self.config).unwrap().choose();
-                    if let Some(aha_move) = self.search_excited(m, &ext_state, inf_after_step_ciurl)
+                    if let Some(aha_move) = self.search_excited(&m, &ext_state, inf_after_step_ciurl)
                     {
                         if aha_move.dest.is_none() {
                             continue;
