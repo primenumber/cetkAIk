@@ -27,8 +27,8 @@ pub struct Tun2Kik1 {
 }
 
 impl Tun2Kik1 {
-    pub fn new(config: Config, show_tactics_message: bool) -> Tun2Kik1 {
-        Tun2Kik1 {
+    pub fn new(config: Config, show_tactics_message: bool) -> Self {
+        Self {
             config,
             rng: SmallRng::from_entropy(),
             show_tactics_message,
@@ -36,8 +36,9 @@ impl Tun2Kik1 {
     }
 
     fn eval<T: CetkaikRepresentation>(&self, hnr_state: &HandNotResolved_<T>) -> f32 {
+        use cetkaik_traits::IsAbsoluteField;
         let mut result = score_hnr(hnr_state) as f32;
-        let player_hop1zuo1 = T::hop1zuo1_of(hnr_state.whose_turn, &hnr_state.f);
+        let player_hop1zuo1: Vec<_> = hnr_state.f.hop1zuo1_of(hnr_state.whose_turn).collect();
         result += 2.0
             * calculate_hands_and_score_from_pieces(&player_hop1zuo1)
                 .unwrap()
@@ -65,7 +66,7 @@ impl<T: CetkaikRepresentation + Clone + std::fmt::Debug> CetkaikEngine<T> for Tu
         let candidates = s.get_candidates(self.config);
         let mut best_move = None;
         let mut best_score = -50.0;
-        for aha_move in candidates.iter() {
+        for aha_move in &candidates {
             if aha_move.dest == Some(m.src) {
                 continue;
             }
@@ -91,6 +92,7 @@ fn is_victorious_hand<T: CetkaikRepresentation>(
     cand: PureMove_<T::AbsoluteCoord>,
     game_state: &GroundState_<T>,
 ) -> bool {
+    use cetkaik_traits::IsAbsoluteField;
     match cand {
         PureMove_::NonTamMoveFromHopZuo { .. }
         | PureMove_::TamMoveNoStep { .. }
@@ -118,7 +120,8 @@ fn is_victorious_hand<T: CetkaikRepresentation>(
                 &|| panic!("tam cannot be captured, why is it in the destination?"),
                 &|color, prof, side| {
                     assert_ne!(side, game_state.whose_turn, "Trying to take an ally!");
-                    let mut hop1zuo1 = T::hop1zuo1_of(game_state.whose_turn, &game_state.f);
+                    let mut hop1zuo1: Vec<_> =
+                        game_state.f.hop1zuo1_of(game_state.whose_turn).collect();
                     let old_calc = calculate_hands_and_score_from_pieces(&hop1zuo1).unwrap();
 
                     hop1zuo1.push(ColorAndProf { color, prof });
@@ -147,7 +150,8 @@ fn is_victorious_hand<T: CetkaikRepresentation>(
                 &|color, prof, side| {
                     assert_ne!(side, game_state.whose_turn, "Trying to take an ally!");
 
-                    let mut hop1zuo1 = T::hop1zuo1_of(game_state.whose_turn, &game_state.f);
+                    let mut hop1zuo1: Vec<_> =
+                        game_state.f.hop1zuo1_of(game_state.whose_turn).collect();
                     let old_calc = calculate_hands_and_score_from_pieces(&hop1zuo1).unwrap();
 
                     hop1zuo1.push(ColorAndProf { color, prof });
@@ -248,21 +252,20 @@ impl std::fmt::Display for TacticsKey {
             f,
             "{} / {}",
             match self {
-                TacticsKey::VictoryAlmostCertain => "我須上行。",
-                TacticsKey::StrengthenedShaman => "為激巫。",
-                TacticsKey::FreeLunch => "我為無与之手。",
-                TacticsKey::AvoidDefeat => "心為此而無行下行之道。",
-                TacticsKey::LossAlmostCertain => "為何即下行。行我心之道。",
-                TacticsKey::Neutral => "無心来為何善。行周時無下行之道。",
+                Self::VictoryAlmostCertain => "我須上行。",
+                Self::StrengthenedShaman => "為激巫。",
+                Self::FreeLunch => "我為無与之手。",
+                Self::AvoidDefeat => "心為此而無行下行之道。",
+                Self::LossAlmostCertain => "為何即下行。行我心之道。",
+                Self::Neutral => "無心来為何善。行周時無下行之道。",
             },
             match self {
-                TacticsKey::VictoryAlmostCertain => "勝ち確",
-                TacticsKey::StrengthenedShaman => "激巫作成",
-                TacticsKey::FreeLunch => "ただ取り",
-                TacticsKey::AvoidDefeat => "負けを避けるためにこう指してみるか",
-                TacticsKey::LossAlmostCertain => "なにやっても負けそうなので好き勝手に指す",
-                TacticsKey::Neutral =>
-                    "いい手が思いつかなかったので、即負けしない範囲で好き勝手に指す",
+                Self::VictoryAlmostCertain => "勝ち確",
+                Self::StrengthenedShaman => "激巫作成",
+                Self::FreeLunch => "ただ取り",
+                Self::AvoidDefeat => "負けを避けるためにこう指してみるか",
+                Self::LossAlmostCertain => "なにやっても負けそうなので好き勝手に指す",
+                Self::Neutral => "いい手が思いつかなかったので、即負けしない範囲で好き勝手に指す",
             }
         )
     }
@@ -466,6 +469,7 @@ pub struct TacticsAndBotMove<Coord> {
 /// 4. 『負け確は避けよ』：取られづらくない駒で相手が役を作れて、それを避ける手があるなら、避ける手を指せ。一方で、「手を指した後で、取られづらくない駒で相手が役を作れる」もダメだなぁ。
 /// 5. 『激巫は行え』：取られづらい激巫を作ることができるなら、常にせよ。
 /// 6. 『ただ取りは行え』：駒を取ったとしてもそれがプレイヤーに取り返されづらい、かつ、その取る手そのものがやりづらくないなら、取る。
+#[allow(clippy::too_many_lines)]
 pub fn generate_move<T: CetkaikRepresentation + Clone + std::fmt::Debug>(
     rng: &mut SmallRng,
     config: Config,

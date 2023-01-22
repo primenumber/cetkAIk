@@ -14,28 +14,26 @@ pub struct MinMaxPlayer {
 const SCORE_SCALE: i32 = 256;
 
 impl MinMaxPlayer {
-    pub fn new(config: Config) -> MinMaxPlayer {
-        MinMaxPlayer { config }
+    pub const fn new(config: Config) -> Self {
+        Self { config }
     }
 
+    #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
     fn eval<T: CetkaikRepresentation + Clone>(&self, state: &GroundState_<T>) -> i32 {
-        let mut result = score_gs(&state);
-        let (player_hop1zuo1, opponent_hop1zuo1) = match state.whose_turn {
-            AbsoluteSide::IASide => (
-                T::hop1zuo1_of(AbsoluteSide::IASide, &state.f),
-                T::hop1zuo1_of(AbsoluteSide::ASide, &state.f),
-            ),
-            AbsoluteSide::ASide => (
-                T::hop1zuo1_of(AbsoluteSide::ASide, &state.f),
-                T::hop1zuo1_of(AbsoluteSide::IASide, &state.f),
-            ),
-        };
-        result += 2 * calculate_hands_and_score_from_pieces(&player_hop1zuo1)
-            .unwrap()
-            .score * SCORE_SCALE;
-        result -= 2 * calculate_hands_and_score_from_pieces(&opponent_hop1zuo1)
-            .unwrap()
-            .score * SCORE_SCALE;
+        use cetkaik_traits::IsAbsoluteField;
+        let mut result = score_gs(state);
+        let player_hop1zuo1: Vec<_> = state.f.hop1zuo1_of(state.whose_turn).collect();
+        let opponent_hop1zuo1: Vec<_> = state.f.hop1zuo1_of(!state.whose_turn).collect();
+        result += 2
+            * calculate_hands_and_score_from_pieces(&player_hop1zuo1)
+                .unwrap()
+                .score
+            * SCORE_SCALE;
+        result -= 2
+            * calculate_hands_and_score_from_pieces(&opponent_hop1zuo1)
+                .unwrap()
+                .score
+            * SCORE_SCALE;
         result += player_hop1zuo1.len() as i32 * SCORE_SCALE;
         result -= opponent_hop1zuo1.len() as i32 * SCORE_SCALE;
         result
@@ -58,13 +56,15 @@ impl MinMaxPlayer {
                     }
                     _ => panic!("should not be given"),
                 };
-                score_gs(&s) * SCORE_SCALE
+                score_gs(s) * SCORE_SCALE
             }
-            IfTaxot_::VictoriousSide(v) => if v.0 == Some(player) {
-                40 * SCORE_SCALE
-            } else {
-                -40 * SCORE_SCALE
-            },
+            IfTaxot_::VictoriousSide(v) => {
+                if v.0 == Some(player) {
+                    40 * SCORE_SCALE
+                } else {
+                    -40 * SCORE_SCALE
+                }
+            }
         }
     }
 
@@ -80,8 +80,8 @@ impl MinMaxPlayer {
                 self.eval_hand_resolved_recursive(k.whose_turn, &resolved, depth, node_count)
             }
             Probabilistic::Water { failure, success } => {
-                let resolved_failure = resolve(&failure, self.config);
-                let resolved_success = resolve(&success, self.config);
+                let resolved_failure = resolve(failure, self.config);
+                let resolved_success = resolve(success, self.config);
                 let sum = self.eval_hand_resolved_recursive(
                     failure.whose_turn,
                     &resolved_failure,
@@ -111,12 +111,12 @@ impl MinMaxPlayer {
             Probabilistic::Pure(_) => panic!("Pure should not be given"),
             Probabilistic::Water { .. } => panic!("Water should not be given"),
             Probabilistic::Sticks {
-                s0,
+                s0: _,
                 s1,
                 s2,
                 s3,
                 s4,
-                s5,
+                s5: _,
             } => {
                 //let sum = 1 * self.eval_excited_recursive(msg, &s0, Some(0), depth, node_count)
                 //    + 5 * self.eval_excited_recursive(msg, &s1, Some(1), depth, node_count)
@@ -124,11 +124,11 @@ impl MinMaxPlayer {
                 //    + 10 * self.eval_excited_recursive(msg, &s3, Some(3), depth, node_count)
                 //    + 5 * self.eval_excited_recursive(msg, &s4, Some(4), depth, node_count)
                 //    + 1 * self.eval_excited_recursive(msg, &s5, Some(5), depth, node_count);
-                let sum = 
-                    1 * self.eval_excited_recursive(msg, &s1, Some(1), depth, node_count)
-                    + 2 * self.eval_excited_recursive(msg, &s2, Some(2), depth, node_count)
-                    + 2 * self.eval_excited_recursive(msg, &s3, Some(3), depth, node_count)
-                    + 1 * self.eval_excited_recursive(msg, &s4, Some(4), depth, node_count);
+                #[allow(clippy::identity_op)]
+                let sum = 1 * self.eval_excited_recursive(msg, s1, Some(1), depth, node_count)
+                    + 2 * self.eval_excited_recursive(msg, s2, Some(2), depth, node_count)
+                    + 2 * self.eval_excited_recursive(msg, s3, Some(3), depth, node_count)
+                    + 1 * self.eval_excited_recursive(msg, s4, Some(4), depth, node_count);
                 sum / 6
             }
             Probabilistic::WhoGoesFirst { .. } => {
@@ -154,10 +154,10 @@ impl MinMaxPlayer {
             .filter_map(|pure_move| match pure_move {
                 PureMove__::NormalMove(m) => {
                     match m {
-                        NormalMove_::TamMoveNoStep { .. } => return None,
-                        NormalMove_::TamMoveStepsDuringFormer { .. } => return None,
-                        NormalMove_::TamMoveStepsDuringLatter { .. } => return None,
-                        NormalMove_::NonTamMoveFromHopZuo { .. } => return None,
+                        NormalMove_::TamMoveNoStep { .. }
+                        | NormalMove_::TamMoveStepsDuringFormer { .. }
+                        | NormalMove_::TamMoveStepsDuringLatter { .. }
+                        | NormalMove_::NonTamMoveFromHopZuo { .. } => return None,
                         NormalMove_::NonTamMoveSrcStepDstFinite { src, step, dest } => {
                             if Some(T::absolute_tam2())
                                 == T::as_board_absolute(&state.f).peek(*step)
@@ -166,7 +166,7 @@ impl MinMaxPlayer {
                                 return None;
                             }
                         }
-                        _ => (),
+                        NormalMove_::NonTamMoveSrcDst{ .. } => (),
                     }
                     Some(self.eval_prob_hand_not_resolved(
                         &apply_normal_move::<T>(state, *m, self.config).unwrap(),
@@ -185,7 +185,7 @@ impl MinMaxPlayer {
                         return None;
                     }
                     Some(self.eval_prob_excited(
-                        m,
+                        &m,
                         &apply_inf_after_step(state, *m, self.config).unwrap(),
                         depth,
                         node_count,
@@ -210,7 +210,9 @@ impl MinMaxPlayer {
             .iter()
             .map(|aha_move| {
                 self.eval_prob_hand_not_resolved(
-                    &apply_after_half_acceptance(state, *aha_move, self.config).unwrap(), depth, node_count
+                    &apply_after_half_acceptance(state, *aha_move, self.config).unwrap(),
+                    depth,
+                    node_count,
                 )
             })
             .max()
@@ -227,17 +229,19 @@ impl MinMaxPlayer {
         *node_count += 1;
         match state {
             HandResolved_::NeitherTymokNorTaxot(s) => {
-                -self.eval_ground_recursive(&s, depth - 1, node_count)
+                -self.eval_ground_recursive(s, depth - 1, node_count)
             }
             HandResolved_::HandExists { if_tymok, if_taxot } => std::cmp::max(
-                -self.eval_ground_recursive(&if_tymok, depth - 1, node_count),
+                -self.eval_ground_recursive(if_tymok, depth - 1, node_count),
                 self.eval_taxot(whose_turn, if_taxot),
             ),
-            HandResolved_::GameEndsWithoutTymokTaxot(v) => if v.0 == Some(whose_turn) {
-                40 * SCORE_SCALE
-            } else {
-                -40 * SCORE_SCALE
-            },
+            HandResolved_::GameEndsWithoutTymokTaxot(v) => {
+                if v.0 == Some(whose_turn) {
+                    40 * SCORE_SCALE
+                } else {
+                    -40 * SCORE_SCALE
+                }
+            }
         }
     }
 }
@@ -250,14 +254,14 @@ impl<T: CetkaikRepresentation + Clone> CetkaikEngine<T> for MinMaxPlayer {
         candidates.extend(hop1zuo1_candidates);
         let depth = 2;
         let mut node_count = 0;
-        for pure_move in candidates.iter() {
+        for pure_move in &candidates {
             let score = match pure_move {
                 PureMove__::NormalMove(m) => {
                     match m {
-                        NormalMove_::TamMoveNoStep { .. } => continue,
-                        NormalMove_::TamMoveStepsDuringFormer { .. } => continue,
-                        NormalMove_::TamMoveStepsDuringLatter { .. } => continue,
-                        NormalMove_::NonTamMoveFromHopZuo { .. } => continue,
+                        NormalMove_::TamMoveNoStep { .. }
+                        | NormalMove_::TamMoveStepsDuringFormer { .. }
+                        | NormalMove_::TamMoveStepsDuringLatter { .. }
+                        | NormalMove_::NonTamMoveFromHopZuo { .. } => continue,
                         NormalMove_::NonTamMoveSrcStepDstFinite { src, step, dest } => {
                             if Some(T::absolute_tam2())
                                 == T::as_board_absolute(&state.f).peek(*step)
@@ -266,7 +270,7 @@ impl<T: CetkaikRepresentation + Clone> CetkaikEngine<T> for MinMaxPlayer {
                                 continue;
                             }
                         }
-                        _ => (),
+                        NormalMove_::NonTamMoveSrcDst{ .. } => (),
                     }
                     self.eval_prob_hand_not_resolved(
                         &apply_normal_move::<T>(state, *m, self.config).unwrap(),
@@ -285,7 +289,7 @@ impl<T: CetkaikRepresentation + Clone> CetkaikEngine<T> for MinMaxPlayer {
                         continue;
                     }
                     self.eval_prob_excited(
-                        m,
+                        &m,
                         &apply_inf_after_step(state, *m, self.config).unwrap(),
                         depth,
                         &mut node_count,
@@ -297,8 +301,8 @@ impl<T: CetkaikRepresentation + Clone> CetkaikEngine<T> for MinMaxPlayer {
                 best_score = score;
             }
         }
-        eprintln!("Nodes: {}", node_count);
-        best_move.cloned()
+        eprintln!("Nodes: {node_count}");
+        best_move.copied()
     }
 
     fn search_excited(
@@ -312,17 +316,18 @@ impl<T: CetkaikRepresentation + Clone> CetkaikEngine<T> for MinMaxPlayer {
         let mut best_score = -12800.0;
         let depth = 2;
         let mut node_count = 0;
-        for aha_move in candidates.iter() {
+        for aha_move in &candidates {
             let score = self.eval_prob_hand_not_resolved(
                 &apply_after_half_acceptance(state, *aha_move, self.config).unwrap(),
-                depth, &mut node_count,
+                depth,
+                &mut node_count,
             ) as f32;
             if score > best_score {
                 best_move = Some(aha_move);
                 best_score = score;
             }
         }
-        eprintln!("Nodes: {}", node_count);
+        eprintln!("Nodes: {node_count}");
         best_move.copied()
     }
 

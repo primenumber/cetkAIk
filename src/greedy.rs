@@ -3,7 +3,7 @@ use cetkaik_calculate_hand::*;
 use cetkaik_full_state_transition::message::*;
 use cetkaik_full_state_transition::state::*;
 use cetkaik_full_state_transition::*;
-use cetkaik_fundamental::AbsoluteSide::{ASide, IASide};
+use cetkaik_traits::IsAbsoluteField;
 use cetkaik_traits::{CetkaikRepresentation, IsBoard};
 use rand::prelude::*;
 use rand::rngs::SmallRng;
@@ -14,8 +14,8 @@ pub struct GreedyPlayer {
 }
 
 impl GreedyPlayer {
-    pub fn new(config: Config) -> GreedyPlayer {
-        GreedyPlayer {
+    pub fn new(config: Config) -> Self {
+        Self {
             config,
             rng: SmallRng::from_entropy(),
         }
@@ -23,17 +23,7 @@ impl GreedyPlayer {
 
     fn eval<T: CetkaikRepresentation>(&self, hnr_state: &HandNotResolved_<T>) -> f32 {
         let mut result = score_hnr(hnr_state) as f32;
-        let (player_hop1zuo1, _opponent_hop1zuo1) = match hnr_state.whose_turn {
-            IASide => (
-                T::hop1zuo1_of(IASide, &hnr_state.f),
-                T::hop1zuo1_of(ASide, &hnr_state.f),
-            ),
-            ASide => (
-                T::hop1zuo1_of(ASide, &hnr_state.f),
-                T::hop1zuo1_of(IASide, &hnr_state.f),
-            ),
-        };
-
+        let player_hop1zuo1: Vec<_> = hnr_state.f.hop1zuo1_of(hnr_state.whose_turn).collect();
         result += 2.0
             * calculate_hands_and_score_from_pieces(&player_hop1zuo1)
                 .unwrap_or_else(|toomany| {
@@ -43,7 +33,7 @@ impl GreedyPlayer {
                         hnr_state.f,
                         player_hop1zuo1
                             .iter()
-                            .map(|c| c.to_string())
+                            .map(std::string::ToString::to_string)
                             .collect::<Vec<_>>()
                             .join(" ")
                     )
@@ -61,16 +51,15 @@ impl<T: CetkaikRepresentation + Clone> CetkaikEngine<T> for GreedyPlayer {
         let mut best_score = -50.0;
         candidates.shuffle(&mut self.rng);
         candidates.extend(hop1zuo1_candidates);
-        for pure_move in candidates.iter() {
+        for pure_move in &candidates {
             let hnr_state = match pure_move {
                 PureMove__::NormalMove(m) => {
                     match m {
-                        NormalMove_::TamMoveNoStep { .. } => continue,
-                        NormalMove_::TamMoveStepsDuringFormer { .. } => continue,
-                        NormalMove_::TamMoveStepsDuringLatter { .. } => continue,
+                        NormalMove_::TamMoveStepsDuringFormer { .. }
+                        | NormalMove_::TamMoveNoStep { .. }
+                        | NormalMove_::TamMoveStepsDuringLatter { .. } => continue,
                         NormalMove_::NonTamMoveSrcStepDstFinite { src, step, dest } => {
-                            if Some(T::absolute_tam2())
-                                == T::as_board_absolute(&s.f).peek(*step)
+                            if Some(T::absolute_tam2()) == T::as_board_absolute(&s.f).peek(*step)
                                 || src == dest
                             {
                                 continue;
@@ -84,19 +73,15 @@ impl<T: CetkaikRepresentation + Clone> CetkaikEngine<T> for GreedyPlayer {
                         .0
                 }
                 PureMove__::InfAfterStep(m) => {
-                    if Some(T::absolute_tam2())
-                        == T::as_board_absolute(&s.f).peek(m.src)
-                    {
+                    if Some(T::absolute_tam2()) == T::as_board_absolute(&s.f).peek(m.src) {
                         continue;
                     }
-                    if Some(T::absolute_tam2())
-                        == T::as_board_absolute(&s.f).peek(m.step)
-                    {
+                    if Some(T::absolute_tam2()) == T::as_board_absolute(&s.f).peek(m.step) {
                         continue;
                     }
                     let (ext_state, inf_after_step_ciurl) =
                         apply_inf_after_step(s, *m, self.config).unwrap().choose();
-                    if let Some(aha_move) = self.search_excited(m, &ext_state, inf_after_step_ciurl)
+                    if let Some(aha_move) = self.search_excited(&m, &ext_state, inf_after_step_ciurl)
                     {
                         if aha_move.dest.is_none() {
                             continue;
@@ -116,7 +101,7 @@ impl<T: CetkaikRepresentation + Clone> CetkaikEngine<T> for GreedyPlayer {
                 best_score = score;
             }
         }
-        best_move.cloned()
+        best_move.copied()
     }
 
     fn search_excited(
@@ -128,7 +113,7 @@ impl<T: CetkaikRepresentation + Clone> CetkaikEngine<T> for GreedyPlayer {
         let candidates = s.get_candidates(self.config);
         let mut best_move = None;
         let mut best_score = -50.0;
-        for aha_move in candidates.iter() {
+        for aha_move in &candidates {
             if aha_move.dest == Some(m.src) {
                 continue;
             }
